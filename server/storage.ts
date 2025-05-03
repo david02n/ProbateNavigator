@@ -45,8 +45,9 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000 // 24 hours
     });
     
-    // Add a test user for login testing
-    const testUserPassword = "81dc9bdb52d04dc20036dbd8313ed055.1111111111111111"; // md5 hash of "1234" with salt
+    // Add a test user for login testing with correctly formatted password
+    // Format should be scrypt(password, salt, 64).toString("hex") + "." + salt
+    const testUserPassword = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92c10b7d1d0aae37510b659b3958424a67fdfce21c67f5b8c46989fdada96c823.1111111111111111"; // "1234" with salt "1111111111111111"
     const testUser: User = {
       id: 1,
       email: "test@probateswift.com",

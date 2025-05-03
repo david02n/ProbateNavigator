@@ -31,10 +31,31 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  try {
+    // Check if the stored password has the expected format
+    if (!stored.includes('.')) {
+      console.error('Stored password is not in the expected format: hashString.salt');
+      return false;
+    }
+    
+    const [hashed, salt] = stored.split(".");
+    if (!hashed || !salt) {
+      console.error('Invalid stored password format');
+      return false;
+    }
+    
+    // Convert stored hash to buffer
+    const hashedBuf = Buffer.from(hashed, "hex");
+    
+    // Hash the supplied password with the same salt
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    
+    // Compare the two buffers using a timing-safe comparison
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } catch (error) {
+    console.error('Error comparing passwords:', error);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {

@@ -1,0 +1,378 @@
+🧭 1. Initial Triage & Guidance
+Goal: Determine if the user even needs probate, and orient them.
+
+Key Features:
+
+Friendly Q&A flow: “Was there a will?”, “What kind of assets did they have?”, “Was there jointly owned property?” etc.
+
+Logic engine: Determines if probate is required.
+
+Branching logic: Guides users to the correct path (with or without a will, etc.)
+
+Outcome: Simple, plain English explanation and tailored next steps.
+
+Resources: Offer guidance or links to official tools (e.g., inheritance checker).
+
+📁 2. Will Discovery & Verification
+Goal: Help the user confirm if there is a valid will and who can apply.
+
+Key Features:
+
+Upload feature for scanned will (with optional AI scan to check date, names, etc.)
+
+Step-by-step checklist for locating a will (inc. solicitor lookup, National Will Register link)
+
+Guide to multiple executors and power reservation
+
+Prompts for special scenarios (lost will? executor died? renunciation?)
+
+Outcome: Confirm executor/administrator and store their details
+
+📊 3. Estate Valuation Tool
+Goal: Help the user gather, estimate and log assets and debts.
+
+Key Features:
+
+Structured data entry for assets (cash, property, pensions, investments, etc.)
+
+Integrations: Optional bank account/API integration or upload PDFs
+
+Liabilities: Add debts and funeral costs
+
+Live total calculator: Gross estate / net estate for probate and IHT
+
+Smart prompts for inheritance tax thresholds (e.g. nil-rate band tips)
+
+Outcome: Generates structured summary and report
+
+🧾 4. Tax Handling Assistant
+Goal: Simplify the IHT submission process.
+
+Key Features:
+
+Automate decision tree: Is IHT205 or IHT400 required?
+
+Explain exemptions: spouse, charity, home allowance
+
+Form assistant: Auto-populate IHT forms (IHT205 / IHT400) from user-entered data
+
+Guidance for payment: how to pay, when to pay, setting reminders
+
+Outcome: User has ready-to-submit tax forms or knows how to submit online
+
+📄 5. Probate Application Pack Generator
+Goal: Generate all required application materials.
+
+Key Features:
+
+Choose path: with or without will (PA1P vs. PA1A)
+
+Autofill forms using data collected earlier
+
+Downloadable PDF bundle or pre-submit to probate registry (if you offer integration)
+
+Optional print-and-post instructions with checklist
+
+Executor e-sign flow if multiple applicants
+
+Outcome: Fully compiled probate application pack
+
+📬 6. Tracking & Document Hub
+Goal: Help users track progress and store critical documents.
+
+Key Features:
+
+Grant status tracker (with manual updates or HMCTS API if available)
+
+Upload hub: Store death certificate, grant, IHT forms, letters, etc.
+
+Timeline: Show "what happens next" clearly
+
+Notifications: Nudges for next actions, HMRC timelines, and grant ETA
+
+Outcome: Users feel in control and on track
+
+💸 7. Estate Administration Toolkit
+Goal: Help users carry out the duties post-grant.
+
+Key Features:
+
+Asset release tracker (tick off when each bank/investment is settled)
+
+Template letters to send to institutions
+
+Debts payment and reconciliation checklist
+
+Beneficiary calculator: enter shares, generate distribution plan
+
+Generate receipts and estate accounts automatically
+
+Outcome: Ensure full estate distribution with documentation
+
+📚 8. Edge Case & Help Centre
+Goal: Support users through unusual or stressful situations.
+
+Key Features:
+
+Quick guides: Disputed wills, foreign assets, minor beneficiaries, etc.
+
+Partner solicitor escalation (option to hand over)
+
+AI Q&A chat embedded throughout
+
+Smart routing to HMRC or Probate Registry helplines
+
+Outcome: Reduce stress and show empathy in complex cases
+
+📈 9. Analytics & Completion Confidence
+Goal: Give users peace of mind and validate they’re done.
+
+Key Features:
+
+Completion score: % of probate tasks done
+
+Highlight what's left to do
+
+Option to generate final “probate completion report”
+
+Prompt for feedback or rating experience
+
+🛠 10. Optional Pro Services
+Goal: Monetize while helping users who want support.
+
+Ideas:
+
+Document review from solicitors
+
+On-demand estate accountant help
+
+Property valuation or sale services
+
+Bundle pricing: “We do it for you” vs. “You do it with our help”
+
+Would you like me to turn this into a product roadmap or clickable prototype outline?
+
+
+
+
+
+
+
+You said:
+clickable prototype outline
+
+
+ChatGPT said:
+Great — here’s a clickable prototype outline for ProbateSwift. This breaks down into clear screens and user actions, grouped by product area. Each section can be designed as a distinct flow with intuitive UX, guiding users step-by-step with clarity and reassurance.
+
+🔵 Prototype Outline: ProbateSwift
+🏠 Home / Welcome
+Screens:
+
+Welcome message: “We’ll help you apply for probate—easily, quickly, and clearly.”
+
+Start button: “Begin my probate journey”
+
+Optional: “See how it works” tour (with illustrations)
+
+Key CTA: Start Flow / Create Account
+
+📍 Step 1: Initial Triage
+Screens:
+
+“Do I need probate?” — yes/no Q&A wizard
+
+Questions:
+
+Is there a will?
+
+Were assets held solely or jointly?
+
+Are there properties in their name?
+
+Outcome screen:
+
+"You likely need to apply for probate."
+
+Branch to:
+
+“With a will” path
+
+“No will” path
+
+Offer link to GOV.UK if probate not required
+
+Key CTA: Proceed to Will Verification
+
+📜 Step 2: Will & Executor Check
+Screens:
+
+Upload a scanned will
+
+Confirm executor(s) — add multiple if needed
+
+Prompt: “Are you named in the will?”
+
+If no will: identify closest relative (guided form)
+
+Optional actions:
+
+Mark executor as deceased
+
+Add renunciation or power reserved
+
+Key CTA: Confirm executorship / administrator role
+
+📊 Step 3: Estate Valuation
+Screens:
+
+Assets:
+
+Add item > Select type (bank, home, car, etc.)
+
+Estimated value / Upload document (e.g., bank letter, estate agent PDF)
+
+Liabilities:
+
+Add debts > Select type
+
+Smart calculator:
+
+Gross estate, Net estate, IHT thresholds shown
+
+Warnings if approaching IHT thresholds
+
+Key CTA: Continue to Tax & Application
+
+💰 Step 4: Tax Check & Forms
+Screens:
+
+Auto-check: “Do you need to file inheritance tax?”
+
+If yes: show IHT400 path
+
+Auto-fill data from estate valuation
+
+Generate IHT400 PDF or guide to online submission
+
+If no: confirm excepted estate status
+
+Explain tax payment options
+
+Key CTA: Mark tax step complete
+
+📝 Step 5: Application Pack
+Screens:
+
+PA1P / PA1A form auto-filled from prior answers
+
+E-sign declaration flow for all executors
+
+Check & edit preview
+
+Option:
+
+Download as PDF (with checklist)
+
+Submit online via GOV.UK link (or direct if integration)
+
+Key CTA: Application ready / Sent
+
+📬 Step 6: Tracking Dashboard
+Screens:
+
+Timeline:
+
+"Applied: DD/MM/YYYY"
+
+"Expected grant: ~8–12 weeks"
+
+"Next step: Send death certificate"
+
+Upload Hub:
+
+Death cert, will copy, IHT forms, correspondence
+
+Status tracker:
+
+Grant issued? Yes/No
+
+Link to contact Probate Registry
+
+Key CTA: Upload docs / Add grant when received
+
+🏡 Step 7: Administer Estate
+Screens:
+
+Task list:
+
+Contact banks
+
+Sell property
+
+Pay debts
+
+Prepare distribution
+
+Templates:
+
+Letter to bank / insurer / utility
+
+Beneficiary calculator:
+
+Add names / % or amounts
+
+Auto-generate receipts & estate accounts
+
+Key CTA: Begin distribution
+
+📚 Help & Edge Cases
+Screens:
+
+FAQs:
+
+What if the will is disputed?
+
+What if the estate is insolvent?
+
+What about foreign assets?
+
+Searchable help topics
+
+Chatbot: “Ask ProbateSwift” (AI-powered)
+
+Key CTA: View article / Contact support
+
+✅ Completion Summary
+Screens:
+
+“You’ve completed probate!”
+
+Timeline of events
+
+Download full estate report (PDF)
+
+Prompt for feedback
+
+Key CTA: Finish & export records
+
+💼 Optional Pro Services (Monetization)
+Screens:
+
+Book a 1:1 with probate advisor
+
+Get help with property valuation
+
+“We do it for you” full-service upgrade
+
+Key CTA: Purchase service / Book call
+
+🔗 Backend/Integration Notes (Future scope)
+GOV.UK probate API (if available in future)
+
+HMRC form generation (IHT205 / IHT400 pre-fill)
+
+eSign integration for multi-executor flows (e.g. DocuSign)
+
+Calendar reminders + notification system
+

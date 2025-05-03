@@ -39,11 +39,51 @@ export class MemStorage implements IStorage {
   constructor() {
     this.users = new Map();
     this.assessments = new Map();
-    this.userIdCounter = 1;
+    this.userIdCounter = 2; // Start at 2 since we'll create a test user with ID 1
     this.assessmentIdCounter = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
     });
+    
+    // Add a test user for login testing
+    const testUserPassword = "81dc9bdb52d04dc20036dbd8313ed055.1111111111111111"; // md5 hash of "1234" with salt
+    const testUser: User = {
+      id: 1,
+      email: "test@probateswift.com",
+      password: testUserPassword,
+      firstName: "Test",
+      lastName: "User",
+      isGuest: false,
+      createdAt: new Date(),
+      lastLogin: null
+    };
+    this.users.set(1, testUser);
+    
+    // Add a test assessment result for the test user
+    const testAssessment: AssessmentResult = {
+      id: 1,
+      userId: 1,
+      isProbateRequired: true,
+      probateType: "Grant of Probate",
+      hasWill: true,
+      isInsolvent: false,
+      hasDispute: false,
+      assessmentData: JSON.stringify({
+        result: {
+          isProbateRequired: true,
+          probateType: "Grant of Probate"
+        },
+        answers: {
+          q1: "yes",
+          q2: "yes",
+          q3: "no",
+          q4: "no"
+        }
+      }),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.assessments.set(1, testAssessment);
   }
 
   // User methods

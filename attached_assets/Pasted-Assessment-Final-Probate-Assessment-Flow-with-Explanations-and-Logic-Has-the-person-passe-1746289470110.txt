@@ -1,0 +1,78 @@
+Assessment 
+
+✅ Final Probate Assessment Flow (with Explanations and Logic)
+
+Has the person passed away?
+ We can only help once someone has officially died.
+ → ❌ If No → Show: “Probate starts only after someone has passed away.” (End flow)
+ → ✅ If Yes → Continue
+
+
+Do you have the official death certificate?
+ You’ll need this document before you can apply for probate.
+ → ❌ If No → Show: “You’ll need to register the death before continuing.” (End flow or allow user to continue with limited info)
+ → ✅ If Yes → Continue
+
+
+Did the person live in England or Wales?
+ This service is for people who died in England or Wales only.
+ → ❌ If No → Show: “We currently only support probate for England and Wales.” (End flow)
+ → ✅ If Yes → Continue
+
+
+Did the person leave a will?
+ This helps us know which probate process you’ll need to follow.
+ → If Yes → Continue to Q5
+ → If No → Skip to Q6
+ → If Not sure → Suggest: “You may need to search their paperwork or contact their solicitor.” → Continue with “no will” logic for now
+
+
+Are you named as an executor in the will?
+ Only named executors can apply for probate if there is a will.
+ → ✅ If Yes → Continue
+ → ❌ If No → Show: “You’ll need to speak to the person named as executor.” (End flow or optional prompt to share flow)
+ → If Not applicable → Continue (assume no will / intestacy)
+
+
+Did the person own any property (house, flat, or land) in their name only?
+ Owning property in their sole name almost always means probate is required.
+ → ✅ If Yes → 🔔 Prompt: “Probate will be needed to transfer or sell this property.” → [Register to begin]
+ → If Only jointly owned, continue to Q7
+ → If No, continue
+
+
+Did the person have bank accounts, savings, or investments in their sole name?
+ Assets held just in their name may require probate to access.
+ → ✅ If Yes → Continue
+ → If No or Not sure, continue
+
+
+Are the total assets in their sole name worth more than £5,000?
+ Most banks ask for probate if the account balance is above this amount.
+ → ✅ If Yes → 🔔 Prompt: “Probate is likely required to access these funds.” → [Register to begin]
+ → If No, and no property, continue
+ → If Not sure, suggest: “You may want to confirm account balances before proceeding.”
+
+
+Have any banks or financial institutions already released funds without asking for probate?
+ Some banks may release small amounts without needing probate.
+ → If Yes, suggest: “If all accounts release funds without probate, you may not need to apply.”
+ → If No or Haven’t contacted them yet, continue
+
+
+Are you planning to sell or transfer any property that was owned by the person who died?
+ You’ll need probate to sell or transfer property.
+ → ✅ If Yes → 🔔 Prompt: “You’ll need probate to manage property sales or transfers.” → [Register to begin]
+ → If No, continue
+
+
+Are there any disagreements or disputes about the will or inheritance?
+ Disputes can slow the process, but probate is still usually required.
+ → ✅ If Yes → Show: “You may need legal advice — but probate is still likely required.” → [Register to begin]
+ → If No, continue
+
+
+Are there any debts that might be more than the total value of the estate?
+ Even if the estate is insolvent (more debts than assets), probate is usually still required.
+ → ✅ If Yes or Not sure → 🔔 Prompt: “Probate is likely required, even if the estate has debts.” → [Register to begin]
+ → If No, show summary

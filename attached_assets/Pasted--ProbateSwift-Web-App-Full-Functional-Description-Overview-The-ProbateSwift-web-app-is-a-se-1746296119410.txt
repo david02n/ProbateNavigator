@@ -1,0 +1,384 @@
+🧾 ProbateSwift Web App – Full Functional Description
+🧭 Overview
+The ProbateSwift web app is a secure, AI-assisted probate guidance tool designed to help users in England and Wales navigate the probate process quickly, clearly, and with minimal legal friction. The app supports both testate (with a will) and intestate (no will) cases, personalises the process based on user answers, and allows for step-by-step document management and task tracking.
+
+🔐 Access & Authentication
+Authentication: Email + password sign-up and login
+
+
+Session Handling: Supports session persistence and secure data storage
+
+
+Guest Mode: Assessment can be completed without login; data is stored temporarily and linked to user upon registration
+
+
+Security: All user data is encrypted at rest and in transit
+
+
+
+✳️ Core Functional Modules
+1. Probate Assessment Quiz
+12-question logic-driven flow
+
+
+Determines:
+
+
+Whether probate is required
+
+
+If yes, whether a Grant of Probate or Letters of Administration is appropriate
+
+
+Edge case handling (insolvent estate, disputes)
+
+
+Assessment outcomes stored in the backend and used to generate personalised next steps
+
+
+2. Personalised Dashboard
+Displays based on assessment outcome:
+
+
+Next steps
+
+
+Form requirements (e.g., PA1P, PA1A, IHT205, IHT400)
+
+
+A progress checklist for each milestone
+
+
+Linked document upload and status tracking per step
+
+
+Allows user to edit/update assessment or restart if needed
+
+
+3. Step-by-Step Workflow
+Key milestones include:
+
+
+Confirming eligibility
+
+
+Document collection (death cert, will, asset valuations)
+
+
+Inheritance tax preparation
+
+
+Form completion
+
+
+Submission & estate distribution
+
+
+Each step contains:
+
+
+Guidance text
+
+
+Required uploads or actions
+
+
+Linkable support from AI assistant
+
+
+4. Document Upload & Management
+Users can upload:
+
+
+Death certificate
+
+
+Will
+
+
+Valuation letters
+
+
+Finalised tax forms
+
+
+Files are stored securely and tied to user ID
+
+
+Each upload triggers a webhook (see Webhooks section)
+
+
+5. AI Chat Assistant (Context-Aware)
+Available persistently as:
+
+
+Expandable chat bubble (bottom-right)
+
+
+Optionally, global ⌘K assistant for quick actions
+
+
+Supports:
+
+
+Contextual queries (e.g., “What’s next for me?”)
+
+
+Navigation assistance
+
+
+Definitions and legal explanations
+
+
+Form guidance
+
+
+Upload help
+
+
+Receives and sends messages via webhook endpoint (see below)
+
+
+
+🌐 Webhooks (External Service Integration)
+The app both receives and sends webhooks to enable real-time integrations with external services.
+🔁 Outgoing Webhook Endpoints
+Purpose
+Endpoint
+Method
+Auth
+Chat Interaction
+GET http://localhost:5678/webhook/chat
+GET
+user: webapp / password: webapp5678
+File Upload Handler
+GET http://localhost:5678/webhook/file
+GET
+user: webapp / password: webapp5678
+
+
+These webhooks are triggered:
+
+
+When a user interacts with the embedded chat assistant
+
+
+When a user uploads documents in the app
+
+
+Each webhook includes relevant metadata:
+
+
+User ID
+
+
+Timestamp
+
+
+File/chat content
+
+
+Assessment context (where available)
+
+
+🧩 Webhook Considerations
+The app should be able to:
+
+
+Receive webhook responses to trigger internal updates or store data
+
+
+Send outbound webhooks (e.g., notify external processors or downstream services)
+
+
+More webhook endpoints may be added as the system evolves
+
+
+Webhook handling must include:
+
+
+Secure authentication
+
+
+Logging for traceability
+
+
+Retry logic for non-200 responses
+
+
+
+⚙️ Backend Requirements
+User Management:
+
+
+Auth system with secure session storage
+
+
+Guest-to-registered user handoff
+
+
+Assessment outcome and state tracking
+
+
+Assessment Engine:
+
+
+Stateless function/service to evaluate answers and return:
+
+
+Probate required Y/N
+
+
+Type of grant
+
+
+Edge case flags (dispute, insolvency)
+
+
+Progress Tracker:
+
+
+Dynamic checklist tied to user progress
+
+
+Updateable state for each step (e.g., “Document uploaded”, “Tax form complete”)
+
+
+File Management:
+
+
+Encrypted storage
+
+
+Webhook dispatch upon upload
+
+
+Audit & Logging:
+
+
+Record user interactions with the assessment and chat
+
+
+Record webhook transactions
+
+
+
+🖥️ Frontend Requirements
+Assessment Experience:
+
+
+Simple, plain English Q&A flow
+
+
+Real-time feedback based on answers
+
+
+Dynamic Dashboard:
+
+
+Updates based on assessment results
+
+
+Shows user progress and remaining tasks
+
+
+File Upload UI:
+
+
+Drag-and-drop or standard file picker
+
+
+Visual confirmation of upload + progress
+
+
+AI Chat Assistant:
+
+
+Expandable chat or command bar (⌘K)
+
+
+Natural language interaction
+
+
+Fallback for structured Q&A if AI fails
+
+
+Mobile Responsive: Fully functional on desktop, tablet, and mobile
+
+
+Accessibility: WCAG 2.1 AA compliant
+
+
+
+📤 End States from Assessment
+The app must support and persist all of the following user outcomes:
+Probate required – Grant of Probate (with will)
+
+
+Probate required – Letters of Administration (no will)
+
+
+Probate may be required – more info needed
+
+
+Probate not required
+
+
+Probate required – insolvent estate
+
+
+Probate blocked – dispute or contested will
+
+
+Each end state:
+Is stored in the backend
+
+
+Personalises the dashboard and forms shown
+
+
+Can be updated if assessment is re-taken
+
+
+
+🚦 Summary of User Journey
+Landing Page → “Start Assessment” or “Register”
+
+
+Assessment Flow (optional, can be pre- or post-auth)
+
+
+Register/Login
+
+
+Dashboard (based on outcome):
+
+
+Personalised steps
+
+
+Document upload
+
+
+Chat support
+
+
+Progress tracking
+
+
+Completion of probate steps
+
+
+
+
+Details
+
+Endpoint for chat interactions
+GET http://localhost:5678/webhook/chat
+user; webapp
+Password; webapp5678
+
+Endpoint for file uploads
+GET http://localhost:5678/webhook/file
+user; webapp
+Password; webapp5678

@@ -14,10 +14,10 @@ export const users = pgTable("users", {
   isGuest: boolean("is_guest").default(false),
 });
 
-// Assessment results model
+// Assessment results model 
 export const assessmentResults = pgTable("assessment_results", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id),
   isProbateRequired: boolean("is_probate_required"),
   probateType: text("probate_type"), // "grant_of_probate", "letters_of_administration", etc.
   hasWill: boolean("has_will"),
@@ -123,17 +123,7 @@ export const documents = pgTable("documents", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Define relationships for documents
-export const documentsRelations = relations(documents, ({ one }) => ({
-  case: one(probateCases, {
-    fields: [documents.caseId],
-    references: [probateCases.id],
-  }),
-  user: one(users, {
-    fields: [documents.userId],
-    references: [users.id],
-  }),
-}));
+// Relationships will be manually handled in queries
 
 // Tasks model - probate process steps and tasks
 export const tasks = pgTable("tasks", {
@@ -152,13 +142,7 @@ export const tasks = pgTable("tasks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Define relationships for tasks
-export const tasksRelations = relations(tasks, ({ one }) => ({
-  case: one(probateCases, {
-    fields: [tasks.caseId],
-    references: [probateCases.id],
-  }),
-}));
+// Relationships will be manually handled in queries
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)

@@ -289,7 +289,7 @@ const ExecutorsPage: React.FC = () => {
       address: executor.address || "",
       city: executor.city || "",
       postCode: executor.postCode || "",
-      relationshipToDeceased: executor.relationshipToDeceased,
+      relationshipToDeceased: executor.relationshipToDeceased || "",
       isApplicant: executor.isApplicant || false,
       isNotifying: executor.isNotifying || false,
     });
@@ -329,7 +329,7 @@ const ExecutorsPage: React.FC = () => {
       address: data.address || null,
       city: data.city || null,
       postCode: data.postCode || null,
-      relationshipToDeceased: data.relationshipToDeceased,
+      relationshipToDeceased: data.relationshipToDeceased || null,
       isApplicant: data.isApplicant,
       isNotifying: data.isNotifying,
     };
@@ -471,16 +471,14 @@ const ExecutorsPage: React.FC = () => {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          {!executor.isPrimary && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 p-0 text-red-500"
-                              onClick={() => handleDeleteExecutor(executor.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-red-500"
+                            onClick={() => handleDeleteExecutor(executor.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       

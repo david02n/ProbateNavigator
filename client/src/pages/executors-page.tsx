@@ -31,6 +31,16 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -48,16 +58,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface ProcessedExecutor extends Executor {
   isPrimary?: boolean;
@@ -463,11 +463,21 @@ const ExecutorsPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditExecutor(executor)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           {!executor.isPrimary && (
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 text-red-500"
+                              onClick={() => handleDeleteExecutor(executor.id)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
@@ -580,10 +590,20 @@ const ExecutorsPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditExecutor(professional)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-red-500"
+                            onClick={() => handleDeleteExecutor(professional.id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -896,6 +916,35 @@ const ExecutorsPage: React.FC = () => {
               </Form>
             </DialogContent>
           </Dialog>
+          
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently remove the executor from the estate.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmDeleteExecutor}
+                  className="bg-red-600 text-white hover:bg-red-700"
+                  disabled={deleteExecutorMutation.isPending}
+                >
+                  {deleteExecutorMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Executor"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </main>
     </div>

@@ -1,10 +1,12 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
-import { AssessmentResult } from "@shared/schema";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
+import { AssessmentResult, ProbateCase, EstateAsset } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import NewHeader from "@/components/layout/NewHeader";
 import Assessment from "@/components/sections/Assessment";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 // UI Components
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +29,8 @@ import {
 
 const NewDashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
   
   // Fetch assessment results
@@ -38,10 +42,104 @@ const NewDashboardPage: React.FC = () => {
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
-  // Calculate estate data based on assessment result
-  const estateValue = assessmentResult ? "£450K" : "£0";
-  const completionDate = assessmentResult ? "12 November 2025" : "Not yet determined";
-  const progressPercent = assessmentResult ? 10 : 0;
+  // Fetch probate cases
+  const {
+    data: probateCases = [],
+    isLoading: isLoadingCases,
+    refetch: refetchCases
+  } = useQuery<ProbateCase[]>({
+    queryKey: ["/api/probate-cases"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!assessmentResult, // Only fetch cases if assessment is completed
+  });
+
+  // Get active case (first one for now)
+  const activeCase = probateCases.length > 0 ? probateCases[0] : null;
+
+  // Fetch estate assets to calculate estate value
+  const {
+    data: assets = [],
+    isLoading: isLoadingAssets
+  } = useQuery<EstateAsset[]>({
+    queryKey: ["/api/assets", activeCase?.id],
+    queryFn: activeCase ? getQueryFn({ on401: "returnNull" }) : () => Promise.resolve([]),
+    enabled: !!activeCase,
+  });
+
+  // Create probate case mutation
+  const createCaseMutation = useMutation({
+    mutationFn: async (caseData: Partial<ProbateCase>) => {
+      const res = await apiRequest("POST", "/api/probate-cases", caseData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/probate-cases"] });
+      toast({
+        title: "Probate case created",
+        description: "Your probate case has been created. You can now start adding information.",
+      });
+      refetchCases();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating probate case",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Check if we need to create a probate case when assessment is completed
+  useEffect(() => {
+    if (assessmentResult && assessmentResult.isProbateRequired && probateCases.length === 0 && !createCaseMutation.isPending && !isLoadingCases) {
+      // Create a probate case based on the assessment
+      createCaseMutation.mutate({
+        userId: user?.id,
+        assessmentId: assessmentResult.id,
+        status: "draft"
+      });
+    }
+  }, [assessmentResult, probateCases, user, isLoadingCases]);
+
+  // Calculate estate value from assets
+  const totalAssets = assets.reduce((sum, asset) => {
+    return sum + (asset.value ? parseFloat(asset.value.toString()) : 0);
+  }, 0);
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  // Format estate value for display
+  const estateValue = activeCase ? 
+    (totalAssets > 0 ? formatCurrency(totalAssets) : "Not yet entered") : 
+    "£0";
+
+  // Calculate estimated completion date (6 months from now)
+  const today = new Date();
+  const sixMonthsLater = new Date(today);
+  sixMonthsLater.setMonth(today.getMonth() + 6);
+  const completionDate = activeCase ? 
+    sixMonthsLater.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 
+    "Not yet determined";
+
+  // Calculate progress based on steps completed
+  let progressPercent = 0;
+  if (assessmentResult) {
+    progressPercent += 10; // Assessment complete
+    if (activeCase) {
+      progressPercent += 5; // Case created
+    }
+    if (assets.length > 0) {
+      progressPercent += 5; // Some assets entered
+    }
+  }
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -69,7 +167,13 @@ const NewDashboardPage: React.FC = () => {
             <div>
               <h2 className="font-bold text-lg mb-1">Next Step</h2>
               {assessmentResult ? (
-                <p className="text-gray-700">Prepare your application for grant of probate</p>
+                <p className="text-gray-700">
+                  {createCaseMutation.isPending 
+                    ? "Creating your probate case..." 
+                    : activeCase 
+                      ? "Continue with your probate application" 
+                      : "Prepare your application for grant of probate"}
+                </p>
               ) : (
                 <p className="text-gray-700">Complete the probate assessment to determine your needs</p>
               )}
@@ -77,8 +181,18 @@ const NewDashboardPage: React.FC = () => {
             <Button 
               className="bg-[#002B49] hover:bg-[#002B49]/90"
               onClick={() => setIsAssessmentOpen(true)}
+              disabled={createCaseMutation.isPending}
             >
-              {assessmentResult ? "start application" : "begin assessment"}
+              {createCaseMutation.isPending ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Creating case...
+                </>
+              ) : assessmentResult ? (
+                "review assessment"
+              ) : (
+                "begin assessment"
+              )}
             </Button>
           </div>
           
@@ -224,7 +338,17 @@ const NewDashboardPage: React.FC = () => {
                               <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full h-fit">Pending</span>
                             </div>
                             <div className="ml-8 mt-2">
-                              <Button size="sm" className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90">Start</Button>
+                              <Button 
+                                size="sm" 
+                                className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90"
+                                onClick={() => activeCase ? navigate("/executors") : toast({ 
+                                  title: "Assessment Required",
+                                  description: "Please complete the assessment first to create a probate case.",
+                                  variant: "destructive"
+                                })}
+                              >
+                                Start
+                              </Button>
                             </div>
                           </div>
                           

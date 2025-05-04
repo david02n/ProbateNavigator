@@ -31,11 +31,12 @@ export interface DocumentCardProps {
     filename: string;
     type: string;
     status: string;
-    createdAt?: Date;
-    updatedAt?: Date;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
     fileSize?: number;
     fileType?: string;
     notes?: string;
+    name?: string; // For backward compatibility
   };
   onDelete?: (documentId: number) => void;
 }
@@ -125,7 +126,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
             </div>
           </div>
           <div className="flex-1">
-            <h4 className="font-medium text-sm truncate">{document.filename}</h4>
+            <h4 className="font-medium text-sm truncate">{document.filename || document.name}</h4>
             <div className="text-xs text-gray-500 mt-1">
               <span className="mr-3">{formatDocumentType(document.type)}</span>
               <span>{formatFileSize(document.fileSize)}</span>
@@ -174,7 +175,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Document?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete "{document.filename}"? This action cannot be undone.
+                      Are you sure you want to delete "{document.filename || document.name}"? This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

@@ -1,9 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Upload, X, Loader2, FileText, FileCheck, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
-import { uploadDocument, DocumentUploadProgress, DocumentAnalysisResult } from "@/lib/documentService";
+import React, { useState, useRef } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { 
+  FileUp, 
+  Upload,
+  File,
+  FileCheck, 
+  Loader2,
+  X
+} from 'lucide-react';
+import { uploadDocument, DocumentUploadProgress, DocumentAnalysisResult } from '@/lib/documentService';
+import { useToast } from '@/hooks/use-toast';
 
 interface DocumentUploaderProps {
   caseId: number;
@@ -12,335 +20,242 @@ interface DocumentUploaderProps {
   onUploadError?: (error: string) => void;
 }
 
-const DocumentUploader: React.FC<DocumentUploaderProps> = ({
-  caseId,
+const DocumentUploader: React.FC<DocumentUploaderProps> = ({ 
+  caseId, 
   category,
   onUploadComplete,
-  onUploadError
+  onUploadError 
 }) => {
-  const { toast } = useToast();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<DocumentUploadProgress>({
+    status: 'uploading',
+    progress: 0,
+    message: ''
+  });
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<DocumentUploadProgress | null>(null);
-  const [pollingId, setPollingId] = useState<NodeJS.Timeout | null>(null);
-  const [uploadedDocId, setUploadedDocId] = useState<number | null>(null);
-
-  // Clean up polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingId) {
-        clearInterval(pollingId);
-      }
-    };
-  }, [pollingId]);
-
+  const { toast } = useToast();
+  
+  // Handle file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const selectedFile = files[0];
-      
-      // Check file size (10MB max)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Please select a file smaller than 10MB",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setFile(selectedFile);
-      // Reset progress
-      setUploadProgress(null);
-      setUploadedDocId(null);
+      setSelectedFile(files[0]);
     }
   };
-
-  const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  
+  // Handle file drop
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    event.stopPropagation();
-    
     const files = event.dataTransfer.files;
     if (files && files.length > 0) {
-      const droppedFile = files[0];
-      
-      // Check file size (10MB max)
-      if (droppedFile.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Please select a file smaller than 10MB",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setFile(droppedFile);
-      // Reset progress
-      setUploadProgress(null);
-      setUploadedDocId(null);
+      setSelectedFile(files[0]);
     }
   };
-
-  const handleUpload = async () => {
-    if (!file) {
-      toast({
-        title: "No file selected",
-        description: "Please select a file to upload",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setUploadProgress({
-      status: 'uploading',
-      progress: 0,
-      message: 'Starting upload...'
-    });
-
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (!prev) return null;
-        
-        // Only increase progress if we're still uploading
-        if (prev.status === 'uploading' && prev.progress < 90) {
-          return {
-            ...prev,
-            progress: Math.min(prev.progress + 10, 90),
-            message: 'Uploading file...'
-          };
-        }
-        return prev;
-      });
-    }, 300);
-
-    try {
-      const response = await uploadDocument(file, caseId, category);
-      
-      clearInterval(progressInterval);
-      
-      if (response.success && response.documentId) {
-        setUploadedDocId(response.documentId);
-        setUploadProgress({
-          status: 'processing',
-          progress: 95,
-          message: 'Processing document...',
-          documentId: response.documentId
-        });
-        
-        // Start polling for document processing status
-        startPolling(response.documentId);
-      } else {
-        setUploadProgress({
-          status: 'error',
-          progress: 100,
-          message: response.error || 'Failed to upload document'
-        });
-        
-        if (onUploadError) {
-          onUploadError(response.error || 'Unknown error occurred');
-        }
-      }
-    } catch (error) {
-      clearInterval(progressInterval);
-      
-      setUploadProgress({
-        status: 'error',
-        progress: 100,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
-      });
-      
-      if (onUploadError) {
-        onUploadError(error instanceof Error ? error.message : 'Unknown error occurred');
-      }
-    }
+  
+  // Handle drag over event (prevents default browser behavior)
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
   };
-
-  const startPolling = (documentId: number) => {
-    // Poll every 2 seconds for document status
-    const id = setInterval(async () => {
-      try {
-        // This would normally call checkDocumentStatus, but for demo we'll simulate
-        // Simulate webhook response after 3-5 seconds
-        setTimeout(() => {
-          const mockResult: DocumentAnalysisResult = {
-            documentId,
-            documentType: category || 'unknown',
-            extractedData: {
-              dateProcessed: new Date().toISOString(),
-              extractedText: "Sample extracted text from document"
-            },
-            status: 'processed'
-          };
-          
-          setUploadProgress({
-            status: 'complete',
-            progress: 100,
-            message: 'Document processed successfully',
-            documentId
-          });
-          
-          if (onUploadComplete) {
-            onUploadComplete(mockResult);
-          }
-          
-          clearInterval(pollingId!);
-          setPollingId(null);
-        }, 3000 + Math.random() * 2000);
-      } catch (error) {
-        console.error('Error polling document status:', error);
-      }
-    }, 2000);
-    
-    setPollingId(id);
-  };
-
-  const resetUpload = () => {
-    setFile(null);
-    setUploadProgress(null);
-    setUploadedDocId(null);
+  
+  // Reset file selection
+  const handleClearFile = () => {
+    setSelectedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    if (pollingId) {
-      clearInterval(pollingId);
-      setPollingId(null);
+  };
+  
+  // Upload the selected file
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a file to upload',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsUploading(true);
+    setUploadProgress({
+      status: 'uploading',
+      progress: 0,
+      message: 'Preparing upload...'
+    });
+    
+    try {
+      // Upload the file
+      const result = await uploadDocument(
+        selectedFile,
+        caseId,
+        category || 'general',
+        (progress: DocumentUploadProgress) => {
+          setUploadProgress(progress);
+        }
+      );
+      
+      if (result.success && result.documentId) {
+        setUploadProgress({
+          status: 'complete',
+          progress: 100,
+          message: 'Upload complete! Processing document...',
+          documentId: result.documentId
+        });
+        
+        toast({
+          title: 'Upload successful',
+          description: 'Your document has been uploaded and is being processed',
+        });
+        
+        // Reset form after successful upload
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        
+        // Notify parent component of successful upload and processing
+        if (onUploadComplete) {
+          // For now, we'll create a simple result since we're waiting for processing
+          const analysisResult: DocumentAnalysisResult = {
+            documentId: result.documentId,
+            documentType: category || 'general',
+            extractedData: {},
+            status: 'processed',
+            message: 'Document uploaded successfully'
+          };
+          onUploadComplete(analysisResult);
+        }
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      setUploadProgress({
+        status: 'error',
+        progress: 0,
+        message: error instanceof Error ? error.message : 'Upload failed'
+      });
+      
+      toast({
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Failed to upload document',
+        variant: 'destructive',
+      });
+      
+      if (onUploadError) {
+        onUploadError(error instanceof Error ? error.message : 'Upload failed');
+      }
+    } finally {
+      setIsUploading(false);
     }
   };
-
+  
   return (
-    <div>
-      {!file ? (
-        <div 
-          className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:bg-gray-50 transition cursor-pointer"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleFileDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Drag & Drop File</h3>
-          <p className="text-gray-500 mb-4 max-w-md mx-auto">
-            Upload PDF, image, or document file (max 10MB)
-          </p>
-          
-          <div className="text-center flex flex-col items-center mb-4">
-            <p className="text-sm text-gray-500">drag & drop file</p>
-            <p className="text-sm text-gray-500 my-2">OR</p>
-          </div>
-          
-          <input 
-            type="file" 
-            ref={fileInputRef}
-            className="hidden" 
-            onChange={handleFileChange} 
-            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-          />
-          <Button 
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
-          >
-            Browse Files
-          </Button>
-        </div>
-      ) : (
-        <div className="border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <div className="h-10 w-10 rounded-md bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                <FileText className="h-5 w-5" />
-              </div>
-              <div>
-                <h4 className="font-medium">{file.name}</h4>
-                <p className="text-xs text-gray-500">
-                  {(file.size / 1024).toFixed(0)} KB • {file.type || 'Unknown file type'}
-                </p>
-              </div>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                resetUpload();
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {uploadProgress ? (
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-sm">
-                <div className="flex items-center">
-                  {uploadProgress.status === 'uploading' && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-blue-500" />
-                  )}
-                  {uploadProgress.status === 'processing' && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-amber-500" />
-                  )}
-                  {uploadProgress.status === 'complete' && (
-                    <FileCheck className="h-4 w-4 mr-2 text-green-500" />
-                  )}
-                  {uploadProgress.status === 'error' && (
-                    <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
-                  )}
-                  <span>
-                    {uploadProgress.message || 
-                     (uploadProgress.status === 'uploading' ? 'Uploading...' : 
-                      uploadProgress.status === 'processing' ? 'Processing...' : 
-                      uploadProgress.status === 'complete' ? 'Complete' : 'Error')}
-                  </span>
+    <div className="w-full">
+      {!isUploading ? (
+        <div>
+          {selectedFile ? (
+            <Card className="p-4 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
+                    <File className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {selectedFile.type || 'Unknown type'}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-gray-500">{uploadProgress.progress}%</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleClearFile}
+                  className="h-8 w-8 text-gray-500 hover:text-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              
-              <Progress value={uploadProgress.progress} className="h-2" />
-              
-              {uploadProgress.status === 'error' && (
-                <div className="mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={resetUpload}
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              )}
-              
-              {uploadProgress.status === 'complete' && (
-                <div className="mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={resetUpload}
-                  >
-                    Upload Another
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex space-x-3 mt-4">
               <Button 
-                className="bg-primary hover:bg-primary/90"
-                onClick={handleUpload}
+                onClick={handleUpload} 
+                className="w-full bg-[#002B49] hover:bg-[#002B49]/90"
               >
-                Upload
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Document
               </Button>
-              <Button 
-                variant="outline"
-                onClick={resetUpload}
-              >
-                Cancel
+            </Card>
+          ) : (
+            <div
+              className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:bg-gray-50 transition cursor-pointer"
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileUp className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+              <h3 className="text-lg font-medium mb-1">Upload Document</h3>
+              <p className="text-gray-500 mb-4 max-w-md mx-auto">
+                Drag and drop your file here, or click to select
+              </p>
+              <p className="text-xs text-gray-400 mb-2">
+                Supported formats: PDF, JPG, PNG, DOC, DOCX (max 10MB)
+              </p>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                className="hidden" 
+                onChange={handleFileChange}
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              />
+              <Button variant="outline" size="sm">
+                Select File
               </Button>
             </div>
           )}
         </div>
+      ) : (
+        <Card className="p-6">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-medium">
+                {uploadProgress.status === 'uploading' ? 'Uploading...' : 
+                 uploadProgress.status === 'processing' ? 'Processing...' : 
+                 uploadProgress.status === 'complete' ? 'Upload Complete' : 'Upload Failed'}
+              </h3>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
+                {uploadProgress.status === 'uploading' || uploadProgress.status === 'processing' ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : uploadProgress.status === 'complete' ? (
+                  <FileCheck className="h-5 w-5" />
+                ) : (
+                  <X className="h-5 w-5" />
+                )}
+              </div>
+            </div>
+            
+            <Progress value={uploadProgress.progress} className="h-2 mb-2" />
+            
+            <p className="text-sm text-gray-500">
+              {uploadProgress.message || 'Uploading your document...'}
+            </p>
+            
+            {selectedFile && (
+              <div className="mt-3 text-xs text-gray-500">
+                {selectedFile.name} • {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+              </div>
+            )}
+          </div>
+          
+          {uploadProgress.status === 'error' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsUploading(false)}
+            >
+              Try Again
+            </Button>
+          )}
+        </Card>
       )}
     </div>
   );

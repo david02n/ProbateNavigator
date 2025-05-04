@@ -182,6 +182,9 @@ const DocumentsPage: React.FC = () => {
     
     // Refresh documents
     refetchDocuments();
+    
+    // Close uploader
+    setShowUploader(false);
   };
   
   // Handle document upload error
@@ -195,6 +198,11 @@ const DocumentsPage: React.FC = () => {
   
   // Handle document deletion
   const handleDeleteDocument = (documentId: number) => {
+    toast({
+      title: "Document deleted",
+      description: "The document has been removed from your case",
+    });
+    
     // Refresh documents after deletion
     refetchDocuments();
   };

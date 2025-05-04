@@ -72,8 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back${user.firstName ? ', ' + user.firstName : ''}!`,
       });
-      // Redirect to dashboard
-      window.location.href = "/dashboard";
+      // Redirect to the root path which renders the dashboard
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       // For all login errors, show a toast but don't automatically redirect
@@ -106,8 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Query assessment data right away
       queryClient.invalidateQueries({ queryKey: ["/api/assessment"] });
       
-      // Redirect to dashboard
-      window.location.href = "/dashboard";
+      // Redirect to the root path which renders the dashboard
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({

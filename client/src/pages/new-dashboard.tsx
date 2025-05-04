@@ -189,7 +189,17 @@ const NewDashboardPage: React.FC = () => {
                               <span className="text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full h-fit">Complete</span>
                             </div>
                             <div className="ml-8 mt-2">
-                              <Button variant="outline" size="sm" className="text-xs h-7">Review</Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-xs h-7"
+                                onClick={() => {
+                                  // Redirect to home page assessment section
+                                  window.location.href = "/#assessment";
+                                }}
+                              >
+                                Review
+                              </Button>
                             </div>
                           </div>
                           
@@ -285,7 +295,16 @@ const NewDashboardPage: React.FC = () => {
                               <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full h-fit">Required</span>
                             </div>
                             <div className="ml-8 mt-2">
-                              <Button size="sm" className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90">Start Assessment</Button>
+                              <Button 
+                                size="sm" 
+                                className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90"
+                                onClick={() => {
+                                  // Redirect to home page which has the assessment form
+                                  window.location.href = "/#assessment";
+                                }}
+                              >
+                                Start Assessment
+                              </Button>
                             </div>
                           </div>
                           

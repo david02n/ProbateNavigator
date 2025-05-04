@@ -45,12 +45,25 @@ const Question: React.FC<QuestionProps> = ({
       <p className="text-charcoal/70 mb-5 pl-11">{description}</p>
       <div className="space-y-3 pl-11 mb-6">
         <RadioGroup value={value} onValueChange={handleChange} name={`question-${number}`}>
-          {options.map((option, index) => (
-            <div key={index} className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-muted transition">
-              <RadioGroupItem id={`question-${number}-${index}`} value={option} className="text-primary" />
-              <Label htmlFor={`question-${number}-${index}`} className="ml-2 cursor-pointer flex-grow">{option}</Label>
-            </div>
-          ))}
+          {options.map((option, index) => {
+            const optionId = `question-${number}-${index}`;
+            return (
+              <div 
+                key={index} 
+                className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-muted transition"
+                onClick={() => {
+                  // When clicking anywhere in the div, select this option
+                  handleChange(option);
+                  
+                  // Also focus the radio item to show visual indication
+                  document.getElementById(optionId)?.focus();
+                }}
+              >
+                <RadioGroupItem id={optionId} value={option} className="text-primary" />
+                <Label htmlFor={optionId} className="ml-2 cursor-pointer flex-grow">{option}</Label>
+              </div>
+            );
+          })}
         </RadioGroup>
       </div>
       

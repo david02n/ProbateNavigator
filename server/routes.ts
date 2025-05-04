@@ -570,38 +570,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (async () => {
         try {
           // Webhook URL provided by the user (GET request as specified)
-          const webhookUrl = 'http://0.0.0.0:5678/webhook/b432c369-ac65-41c9-9d46-c7c37fc23f82';
+          // Important: The URL format could change depending on the environment
+          let webhookUrl = 'http://0.0.0.0:5678/webhook/b432c369-ac65-41c9-9d46-c7c37fc23f82';
           
           console.log(`Attempting to send document ${newDocument.id} to webhook: ${webhookUrl}`);
           
-          // Try both GET and POST methods to ensure we connect properly
+          // Build parameters
+          const webhookParams = {
+            documentId: newDocument.id.toString(),
+            userId: userId.toString(),
+            caseId: caseId.toString(),
+            category: category,
+            filename: req.file!.originalname,
+            fileType: req.file!.mimetype,
+            fileSize: req.file!.size,
+            filePath: req.file!.path
+          };
           
-          // First, try a simple GET request as specified
-          const webhookResponse = await axios.get(webhookUrl, {
-            params: {
-              documentId: newDocument.id.toString(),
-              userId: userId.toString(),
-              caseId: caseId.toString(),
-              category: category,
-              filename: req.file!.originalname,
-              fileType: req.file!.mimetype,
-              fileSize: req.file!.size,
-              filePath: req.file!.path
-            },
-            timeout: 5000 // 5 second timeout
-          });
+          // Try both URLs to see which one works
+          let webhookResponse;
           
-          // If GET fails or additional data is needed, we'll attempt a POST in the error handler
-          
-          console.log('Webhook response:', webhookResponse.data);
-          
-          // If the webhook responds successfully, update the document notes
-          if (webhookResponse.data) {
-            await storage.updateDocument(newDocument.id, {
-              notes: `Uploaded and stored locally at ${req.file!.path}. Webhook processing: ${JSON.stringify(webhookResponse.data)}`,
+          try {
+            // First attempt with 0.0.0.0
+            webhookResponse = await axios.get(webhookUrl, {
+              params: webhookParams,
+              timeout: 5000 // 5 second timeout
             });
             
-            // Broadcast the webhook processing result
+            console.log('Webhook response successful with 0.0.0.0');
+          } catch (err) {
+            // If that fails, try with localhost instead of 0.0.0.0
+            console.log('First webhook attempt failed, trying localhost');
+            webhookUrl = 'http://localhost:5678/webhook/b432c369-ac65-41c9-9d46-c7c37fc23f82';
+            
+            // Second attempt with alternate URL
+            webhookResponse = await axios.get(webhookUrl, {
+              params: webhookParams,
+              timeout: 5000
+            });
+            
+            console.log('Webhook response successful with localhost');
+          }
+          
+          // Process successful webhook response
+          if (webhookResponse && webhookResponse.data) {
+            console.log('Webhook response data:', webhookResponse.data);
+            
+            // Update the document with webhook response
+            await storage.updateDocument(newDocument.id, {
+              notes: `${newDocument.notes}\nWebhook processing: ${JSON.stringify(webhookResponse.data)}`,
+            });
+            
+            // Broadcast the update
             broadcastDocumentUpdate(newDocument.id, 'processed', {
               message: 'Document processed by webhook',
               documentType: category,

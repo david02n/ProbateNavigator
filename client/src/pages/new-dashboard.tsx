@@ -36,10 +36,10 @@ const NewDashboardPage: React.FC = () => {
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
-  // Sample state for estimated completion and estate value (to be replaced with real data)
-  const [estateValue, setEstateValue] = useState("£450K");
-  const [completionDate, setCompletionDate] = useState("12 November 2025");
-  const [progressPercent, setProgressPercent] = useState(10);
+  // Calculate estate data based on assessment result
+  const estateValue = assessmentResult ? "£450K" : "£0";
+  const completionDate = assessmentResult ? "12 November 2025" : "Not yet determined";
+  const progressPercent = assessmentResult ? 10 : 0;
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,8 +51,14 @@ const NewDashboardPage: React.FC = () => {
           <div className="mb-8">
             <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
             <p className="text-gray-600">
-              Welcome {user?.firstName || "User"}, you're applying for probate 
-              {assessmentResult?.hasWill ? " with a will" : " without a will"}
+              {assessmentResult ? (
+                <>
+                  Welcome {user?.firstName || "User"}, you're applying for probate 
+                  {assessmentResult.hasWill ? " with a will" : " without a will"}
+                </>
+              ) : (
+                <>Welcome {user?.firstName || "User"}, let's start your probate journey</>
+              )}
             </p>
           </div>
           
@@ -60,10 +66,14 @@ const NewDashboardPage: React.FC = () => {
           <div className="bg-[#FBF8F3] p-5 rounded-lg flex justify-between items-center mb-8">
             <div>
               <h2 className="font-bold text-lg mb-1">Next Step</h2>
-              <p className="text-gray-700">Prepare your application for grant of probate</p>
+              {assessmentResult ? (
+                <p className="text-gray-700">Prepare your application for grant of probate</p>
+              ) : (
+                <p className="text-gray-700">Complete the probate assessment to determine your needs</p>
+              )}
             </div>
             <Button className="bg-[#002B49] hover:bg-[#002B49]/90">
-              start application
+              {assessmentResult ? "start application" : "begin assessment"}
             </Button>
           </div>
           
@@ -158,98 +168,147 @@ const NewDashboardPage: React.FC = () => {
                         Complete these milestones to progress with your probate application
                       </div>
                       
-                      {/* Task 1 - Assessment (Complete) */}
-                      <div className="border rounded-lg p-4">
-                        <div className="flex justify-between">
-                          <div className="flex items-start">
-                            <div className="flex-shrink-0 mt-0.5">
-                              <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
-                                <CheckCheck className="h-3 w-3 text-white" />
-                              </div>
-                            </div>
-                            <div className="ml-3">
-                              <h4 className="font-medium">Probate Assessment</h4>
-                              <p className="text-sm text-gray-500 mt-1">
-                                You've completed your initial assessment. Based on your answers, probate is required.
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full h-fit">Complete</span>
-                        </div>
-                        <div className="ml-8 mt-2">
-                          <Button variant="outline" size="sm" className="text-xs h-7">Review</Button>
-                        </div>
-                      </div>
-                      
-                      {/* Task 2 - Executor Info (Pending) */}
-                      <div className="border rounded-lg p-4 border-amber-200 bg-amber-50">
-                        <div className="flex justify-between">
-                          <div className="flex items-start">
-                            <div className="flex-shrink-0 mt-0.5">
-                              <div className="h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center">
-                                <Circle className="h-3 w-3 text-white" />
-                              </div>
-                            </div>
-                            <div className="ml-3">
-                              <h4 className="font-medium">Enter Executor Info</h4>
-                              <p className="text-sm text-gray-600 mt-1">
-                                Provide executor details including contact information and relationship to the deceased.
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full h-fit">Pending</span>
-                        </div>
-                        <div className="ml-8 mt-2">
-                          <Button size="sm" className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90">Start</Button>
-                        </div>
-                      </div>
-                      
-                      {/* Task 3 - Death Certificate (Not Started) */}
-                      <div className="border rounded-lg p-4">
-                        <div className="flex justify-between">
-                          <div className="flex items-start">
-                            <div className="flex-shrink-0 mt-0.5">
-                              <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center">
-                                <Circle className="h-3 w-3 text-white" />
-                              </div>
-                            </div>
-                            <div className="ml-3">
-                              <h4 className="font-medium">Upload Death Certificate</h4>
-                              <p className="text-sm text-gray-500 mt-1">
-                                Upload an official death certificate. This is required for the probate application.
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full h-fit">Not Started</span>
-                        </div>
-                        <div className="ml-8 mt-2">
-                          <Button size="sm" className="text-xs h-7" variant="outline" disabled>Upload</Button>
-                        </div>
-                      </div>
-                      
-                      {/* Task 4 - Will Upload (Conditional) */}
-                      {assessmentResult?.hasWill && (
-                        <div className="border rounded-lg p-4">
-                          <div className="flex justify-between">
-                            <div className="flex items-start">
-                              <div className="flex-shrink-0 mt-0.5">
-                                <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center">
-                                  <Circle className="h-3 w-3 text-white" />
+                      {assessmentResult ? (
+                        <>
+                          {/* Task 1 - Assessment (Complete) */}
+                          <div className="border rounded-lg p-4">
+                            <div className="flex justify-between">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 mt-0.5">
+                                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
+                                    <CheckCheck className="h-3 w-3 text-white" />
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <h4 className="font-medium">Probate Assessment</h4>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    You've completed your initial assessment. Based on your answers, probate is required.
+                                  </p>
                                 </div>
                               </div>
-                              <div className="ml-3">
-                                <h4 className="font-medium">Upload Will</h4>
-                                <p className="text-sm text-gray-500 mt-1">
-                                  Upload the original will and any codicils. This must be the official signed version.
-                                </p>
+                              <span className="text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full h-fit">Complete</span>
+                            </div>
+                            <div className="ml-8 mt-2">
+                              <Button variant="outline" size="sm" className="text-xs h-7">Review</Button>
+                            </div>
+                          </div>
+                          
+                          {/* Task 2 - Executor Info (Pending) */}
+                          <div className="border rounded-lg p-4 border-amber-200 bg-amber-50">
+                            <div className="flex justify-between">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 mt-0.5">
+                                  <div className="h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center">
+                                    <Circle className="h-3 w-3 text-white" />
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <h4 className="font-medium">Enter Executor Info</h4>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    Provide executor details including contact information and relationship to the deceased.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full h-fit">Pending</span>
+                            </div>
+                            <div className="ml-8 mt-2">
+                              <Button size="sm" className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90">Start</Button>
+                            </div>
+                          </div>
+                          
+                          {/* Task 3 - Death Certificate (Not Started) */}
+                          <div className="border rounded-lg p-4">
+                            <div className="flex justify-between">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 mt-0.5">
+                                  <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center">
+                                    <Circle className="h-3 w-3 text-white" />
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <h4 className="font-medium">Upload Death Certificate</h4>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    Upload an official death certificate. This is required for the probate application.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full h-fit">Not Started</span>
+                            </div>
+                            <div className="ml-8 mt-2">
+                              <Button size="sm" className="text-xs h-7" variant="outline" disabled>Upload</Button>
+                            </div>
+                          </div>
+                          
+                          {/* Task 4 - Will Upload (Conditional) */}
+                          {assessmentResult?.hasWill && (
+                            <div className="border rounded-lg p-4">
+                              <div className="flex justify-between">
+                                <div className="flex items-start">
+                                  <div className="flex-shrink-0 mt-0.5">
+                                    <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center">
+                                      <Circle className="h-3 w-3 text-white" />
+                                    </div>
+                                  </div>
+                                  <div className="ml-3">
+                                    <h4 className="font-medium">Upload Will</h4>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      Upload the original will and any codicils. This must be the official signed version.
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full h-fit">Not Started</span>
+                              </div>
+                              <div className="ml-8 mt-2">
+                                <Button size="sm" className="text-xs h-7" variant="outline" disabled>Upload</Button>
                               </div>
                             </div>
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full h-fit">Not Started</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {/* Task 1 - Assessment (Not Started) */}
+                          <div className="border rounded-lg p-4 border-amber-200 bg-amber-50">
+                            <div className="flex justify-between">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 mt-0.5">
+                                  <div className="h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center">
+                                    <Circle className="h-3 w-3 text-white" />
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <h4 className="font-medium">Complete Assessment</h4>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    Answer questions about your situation to determine if probate is required.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full h-fit">Required</span>
+                            </div>
+                            <div className="ml-8 mt-2">
+                              <Button size="sm" className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90">Start Assessment</Button>
+                            </div>
                           </div>
-                          <div className="ml-8 mt-2">
-                            <Button size="sm" className="text-xs h-7" variant="outline" disabled>Upload</Button>
+                          
+                          {/* Other tasks shown as locked */}
+                          <div className="border rounded-lg p-4 opacity-50">
+                            <div className="flex justify-between">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 mt-0.5">
+                                  <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center">
+                                    <Circle className="h-3 w-3 text-white" />
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <h4 className="font-medium">Enter Executor Info</h4>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    Complete assessment first to unlock this task.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full h-fit">Locked</span>
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
                       
                       {/* More tasks would continue here */}

@@ -8,6 +8,16 @@ import { User } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Declare the window interface for sharing auth functions
+declare global {
+  interface Window {
+    sharedAuthFunctions?: {
+      setActiveTab: (tab: string) => void;
+      loginFormEmail?: string;
+    };
+  }
+}
+
 // Define authentication types
 type AuthUser = Omit<User, "password">;
 

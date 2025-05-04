@@ -11,23 +11,88 @@ import {
   UserPlus,
   Briefcase,
   Users,
-  Loader2
+  Loader2,
+  Check
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { Executor, ProbateCase } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProcessedExecutor extends Executor {
   isPrimary?: boolean;
   isLegalProfessional?: boolean;
 }
 
+// Create the form schema for adding an executor
+const executorFormSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
+  email: z.string().email({ message: "Please enter a valid email" }).optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
+  postCode: z.string().optional().or(z.literal("")),
+  relationshipToDeceased: z.string({ required_error: "Please select a relationship" }),
+  isApplicant: z.boolean().default(false),
+  isNotifying: z.boolean().default(false),
+});
+
+type ExecutorFormValues = z.infer<typeof executorFormSchema>;
+
 const ExecutorsPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  // State to track if we're in adding mode
-  const [isAdding, setIsAdding] = useState(false);
+  // State to track modal open state
+  const [isExecutorModalOpen, setIsExecutorModalOpen] = useState(false);
+  // State to track if we are adding a legal professional
+  const [isLegalProfessional, setIsLegalProfessional] = useState(false);
+  
+  // Initialize form with validation
+  const form = useForm<ExecutorFormValues>({
+    resolver: zodResolver(executorFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      postCode: "",
+      relationshipToDeceased: "",
+      isApplicant: false,
+      isNotifying: false,
+    },
+  });
   
   // Get the user's probate cases
   const { 

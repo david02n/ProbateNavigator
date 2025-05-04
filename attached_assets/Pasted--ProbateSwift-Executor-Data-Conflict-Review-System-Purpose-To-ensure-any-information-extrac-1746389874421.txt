@@ -1,0 +1,222 @@
+📄 ProbateSwift – Executor & Data Conflict Review System
+🎯 Purpose
+To ensure any information extracted from uploaded documents that differs from existing executor or user data is not automatically overwritten. Instead, these conflicts are logged, presented to the user for manual confirmation, and persist in a reviewable state until resolved.
+
+✅ Feature Overview
+Whenever a user uploads a document (e.g. will, utility bill, ID document), our AI parsing system may extract:
+
+Executor name(s)
+
+Address
+
+Email or phone number
+
+Legal role or relationship
+
+Date of birth or other identity details
+
+If the extracted data differs from any field currently stored in the system (manually added or previously extracted), it should be treated as a conflict and handled as follows:
+
+🔍 Conflict Detection Logic
+Trigger:
+After document upload and AI parsing
+
+For any entity (executor, applicant, contact), compare each parsed field to the existing value in the database
+
+If a difference is found:
+Create a conflict entry
+
+Do not update the original record
+
+Notify the user that updates require their review
+
+🧱 Conflict Entry Data Structure
+json
+Copy
+Edit
+{
+  "entity_type": "executor",
+  "entity_id": "executor_1234",
+  "field": "address",
+  "existing_value": "12 Old Street, London",
+  "suggested_value": "22 New Road, Bristol",
+  "source_document_id": "doc_9876",
+  "source_file_name": "utility_bill.pdf",
+  "status": "pending_review",
+  "confidence_score": 0.94,
+  "created_at": "2025-05-04T14:12:00Z",
+  "user_decision": null
+}
+💡 Frontend/UI Requirements
+🔔 Conflict Notification
+If one or more conflicts exist:
+
+Show banner or alert:
+“We’ve found updates from uploaded documents that need your review.”
+
+Location:
+
+Top of the Executors view
+
+Top of the Dashboard (if it affects the logged-in user or key application data)
+
+✅ Conflict Review Component
+For each conflict, show a side-by-side table:
+
+Field	Current Value	Suggested Update	Source File	Actions
+Address	12 Old Street, London	22 New Road, Bristol	utility_bill.pdf	✅ Accept / ❌ Reject
+Relationship	Unknown	“Son”	will.pdf	✅ Accept / ❌ Reject
+
+Features:
+
+Each action should immediately update the DB (if accepted)
+
+Rejected suggestions are logged and not asked again
+
+Option to “View document” in modal/lightbox
+
+Option to “Ignore this field forever” (optional, advanced)
+
+📂 Conflict Log View
+Accessible via link in notifications or from user/account settings
+
+Groups conflicts by:
+
+Entity (executor, applicant, etc.)
+
+Status (Pending, Resolved, Rejected)
+
+Shows:
+
+Field
+
+Current + Suggested values
+
+Source document
+
+Date detected
+
+Resolution status
+
+🔐 Backend Requirements
+Data Model Changes
+Add a conflicts table or collection tied to entities like executors
+
+Store:
+
+Entity ID + type
+
+Field name
+
+Current value
+
+Suggested value
+
+Source document reference
+
+Confidence score (optional)
+
+Status: pending_review, accepted, rejected
+
+User decision and timestamp
+
+Business Logic
+No automatic updates to executor fields from document parsing
+
+Conflict detection should occur asynchronously post-upload
+
+Notification count should be queryable (conflicts.where(status=pending))
+
+🧠 User Permissions and UX Rules
+Only users with permission to manage an entity (e.g. the original applicant) can accept/reject conflicts
+
+Users can:
+
+Accept to apply the new value
+
+Reject to keep the existing one
+
+Ignore if unsure (remains in pending state)
+
+Conflict count shown in UI should reduce as conflicts are resolved
+
+✨ Optional Enhancements (Phase 2+)
+Display confidence score to user for transparency
+
+Smart defaults: if confidence is very high and value is empty, allow auto-fill with review still required
+
+History/audit trail of all changes for export
+
+Would you like this turned into a handover document (PDF or Notion-style) or embedded directly in your product documentation workspace?
+
+
+
+
+
+
+
+You said:
+did you cover manual entry?
+
+
+ChatGPT said:
+Great catch — I didn’t explicitly cover how manual entry interacts with conflict detection, so let’s close that loop now and ensure it’s fully covered for your team.
+
+✍️ Manual Entry and Conflict Detection – Clarified Handling
+✅ Manual Entry by the User
+Users can always manually:
+
+Add a new executor
+
+Edit any existing executor fields (e.g. address, email, name)
+
+Pre-fill executor info before uploading a will or receiving formal confirmation
+
+🔁 How Manual Entry Interacts With Conflict Logic
+1. Manual entries are treated as the “current truth”
+Any manually entered data is stored as the primary value for that field
+
+AI suggestions from later uploads are not allowed to overwrite this data directly
+
+2. If a document is uploaded after manual entry
+Any field differences between parsed AI values and manually entered values will be:
+
+Logged as conflicts
+
+Clearly labelled:
+“The uploaded document suggests a different address for this executor”
+
+User must manually accept or reject the suggested update
+
+3. If a user manually edits a previously AI-extracted value
+Manual edits overwrite the AI-suggested value
+
+The conflict (if one was pending) should be marked as resolved by user entry
+
+🧱 Summary: Conflict Priorities by Source
+Source of Value	Priority Level	Overridable by AI?	Explanation
+Manual Entry	✅ Highest	❌ No	Always treated as intentional and authoritative
+AI-Extracted Value	Medium	❌ Only suggest, never replace	
+Empty Field	Low	✅ Yes, if no user input exists and confidence is high	
+
+🧑‍💻 Developer Notes on Manual Entry
+Each field on an executor should include a source tag:
+
+manual, ai_extracted, or blank
+
+Conflict logic must only trigger when:
+
+source = manual AND parsed value ≠ stored value
+
+Manual edits after a conflict should:
+
+Resolve the conflict
+
+Mark it with resolved_by_user_entry: true
+
+💡 UX Suggestion for Manual Entry
+When the user manually edits a field with a pending conflict, show:
+
+“A suggestion from your documents exists for this field. Your change will override it.”
+
+Optionally allow users to view the suggestion before confirming their own input

@@ -92,15 +92,39 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private assessments: Map<number, AssessmentResult>;
+  private probateCases: Map<number, ProbateCase>;
+  private executors: Map<number, Executor>;
+  private estateAssets: Map<number, EstateAsset>;
+  private estateLiabilities: Map<number, EstateLiability>;
+  private documents: Map<number, Document>;
+  private tasks: Map<number, Task>;
   private userIdCounter: number;
   private assessmentIdCounter: number;
+  private probateCaseIdCounter: number;
+  private executorIdCounter: number;
+  private estateAssetIdCounter: number;
+  private estateLiabilityIdCounter: number;
+  private documentIdCounter: number;
+  private taskIdCounter: number;
   sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
     this.assessments = new Map();
+    this.probateCases = new Map();
+    this.executors = new Map();
+    this.estateAssets = new Map();
+    this.estateLiabilities = new Map();
+    this.documents = new Map();
+    this.tasks = new Map();
     this.userIdCounter = 2; // Start at 2 since we'll create a test user with ID 1
     this.assessmentIdCounter = 1;
+    this.probateCaseIdCounter = 1;
+    this.executorIdCounter = 1;
+    this.estateAssetIdCounter = 1;
+    this.estateLiabilityIdCounter = 1;
+    this.documentIdCounter = 1;
+    this.taskIdCounter = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
     });
@@ -205,12 +229,12 @@ export class MemStorage implements IStorage {
     const newAssessment: AssessmentResult = {
       id,
       userId: assessment.userId,
-      isProbateRequired: assessment.isProbateRequired || null,
-      probateType: assessment.probateType || null,
-      hasWill: assessment.hasWill || null,
-      isInsolvent: assessment.isInsolvent || null,
-      hasDispute: assessment.hasDispute || null,
-      assessmentData: assessment.assessmentData || null,
+      isProbateRequired: assessment.isProbateRequired === undefined ? null : assessment.isProbateRequired,
+      probateType: assessment.probateType === undefined ? null : assessment.probateType,
+      hasWill: assessment.hasWill === undefined ? null : assessment.hasWill,
+      isInsolvent: assessment.isInsolvent === undefined ? null : assessment.isInsolvent, 
+      hasDispute: assessment.hasDispute === undefined ? null : assessment.hasDispute,
+      assessmentData: assessment.assessmentData === undefined ? null : assessment.assessmentData,
       createdAt: now,
       updatedAt: now
     };
@@ -240,6 +264,308 @@ export class MemStorage implements IStorage {
     
     this.assessments.set(id, updatedAssessment);
     return updatedAssessment;
+  }
+  
+  // Probate Case methods
+  async getProbateCase(id: number): Promise<ProbateCase | undefined> {
+    return this.probateCases.get(id);
+  }
+
+  async getProbateCasesByUserId(userId: number): Promise<ProbateCase[]> {
+    return Array.from(this.probateCases.values()).filter(
+      (probateCase) => probateCase.userId === userId
+    );
+  }
+
+  async createProbateCase(caseData: InsertProbateCase): Promise<ProbateCase> {
+    const id = this.probateCaseIdCounter++;
+    const now = new Date();
+    
+    const newProbateCase: ProbateCase = {
+      id,
+      userId: caseData.userId,
+      assessmentId: caseData.assessmentId,
+      status: caseData.status || "draft",
+      deceasedFirstName: caseData.deceasedFirstName || null,
+      deceasedLastName: caseData.deceasedLastName || null,
+      deceasedDateOfBirth: caseData.deceasedDateOfBirth || null,
+      deceasedDateOfDeath: caseData.deceasedDateOfDeath || null,
+      deceasedAddress: caseData.deceasedAddress || null,
+      caseReference: caseData.caseReference || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.probateCases.set(id, newProbateCase);
+    return newProbateCase;
+  }
+
+  async updateProbateCase(id: number, caseData: Partial<InsertProbateCase>): Promise<ProbateCase | undefined> {
+    const existingCase = this.probateCases.get(id);
+    if (!existingCase) {
+      return undefined;
+    }
+    
+    const updatedCase: ProbateCase = {
+      ...existingCase,
+      ...caseData,
+      updatedAt: new Date()
+    };
+    
+    this.probateCases.set(id, updatedCase);
+    return updatedCase;
+  }
+  
+  // Executor methods
+  async getExecutor(id: number): Promise<Executor | undefined> {
+    return this.executors.get(id);
+  }
+
+  async getExecutorsByCaseId(caseId: number): Promise<Executor[]> {
+    return Array.from(this.executors.values()).filter(
+      (executor) => executor.caseId === caseId
+    );
+  }
+
+  async createExecutor(executorData: InsertExecutor): Promise<Executor> {
+    const id = this.executorIdCounter++;
+    const now = new Date();
+    
+    const newExecutor: Executor = {
+      id,
+      caseId: executorData.caseId,
+      firstName: executorData.firstName || null,
+      lastName: executorData.lastName || null,
+      email: executorData.email || null,
+      phone: executorData.phone || null,
+      address: executorData.address || null,
+      isMainExecutor: executorData.isMainExecutor || false,
+      relationship: executorData.relationship || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.executors.set(id, newExecutor);
+    return newExecutor;
+  }
+
+  async updateExecutor(id: number, executorData: Partial<InsertExecutor>): Promise<Executor | undefined> {
+    const existingExecutor = this.executors.get(id);
+    if (!existingExecutor) {
+      return undefined;
+    }
+    
+    const updatedExecutor: Executor = {
+      ...existingExecutor,
+      ...executorData,
+      updatedAt: new Date()
+    };
+    
+    this.executors.set(id, updatedExecutor);
+    return updatedExecutor;
+  }
+  
+  // Estate Asset methods
+  async getEstateAsset(id: number): Promise<EstateAsset | undefined> {
+    return this.estateAssets.get(id);
+  }
+
+  async getEstateAssetsByCaseId(caseId: number): Promise<EstateAsset[]> {
+    return Array.from(this.estateAssets.values()).filter(
+      (asset) => asset.caseId === caseId
+    );
+  }
+
+  async createEstateAsset(assetData: InsertEstateAsset): Promise<EstateAsset> {
+    const id = this.estateAssetIdCounter++;
+    const now = new Date();
+    
+    const newAsset: EstateAsset = {
+      id,
+      caseId: assetData.caseId,
+      type: assetData.type,
+      description: assetData.description || null,
+      value: assetData.value || null,
+      location: assetData.location || null,
+      ownership: assetData.ownership || null,
+      jointOwners: assetData.jointOwners || null,
+      metadata: assetData.metadata || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.estateAssets.set(id, newAsset);
+    return newAsset;
+  }
+
+  async updateEstateAsset(id: number, assetData: Partial<InsertEstateAsset>): Promise<EstateAsset | undefined> {
+    const existingAsset = this.estateAssets.get(id);
+    if (!existingAsset) {
+      return undefined;
+    }
+    
+    const updatedAsset: EstateAsset = {
+      ...existingAsset,
+      ...assetData,
+      updatedAt: new Date()
+    };
+    
+    this.estateAssets.set(id, updatedAsset);
+    return updatedAsset;
+  }
+  
+  // Estate Liability methods
+  async getEstateLiability(id: number): Promise<EstateLiability | undefined> {
+    return this.estateLiabilities.get(id);
+  }
+
+  async getEstateLiabilitiesByCaseId(caseId: number): Promise<EstateLiability[]> {
+    return Array.from(this.estateLiabilities.values()).filter(
+      (liability) => liability.caseId === caseId
+    );
+  }
+
+  async createEstateLiability(liabilityData: InsertEstateLiability): Promise<EstateLiability> {
+    const id = this.estateLiabilityIdCounter++;
+    const now = new Date();
+    
+    const newLiability: EstateLiability = {
+      id,
+      caseId: liabilityData.caseId,
+      type: liabilityData.type,
+      description: liabilityData.description || null,
+      amount: liabilityData.amount || null,
+      creditor: liabilityData.creditor || null,
+      reference: liabilityData.reference || null,
+      metadata: liabilityData.metadata || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.estateLiabilities.set(id, newLiability);
+    return newLiability;
+  }
+
+  async updateEstateLiability(id: number, liabilityData: Partial<InsertEstateLiability>): Promise<EstateLiability | undefined> {
+    const existingLiability = this.estateLiabilities.get(id);
+    if (!existingLiability) {
+      return undefined;
+    }
+    
+    const updatedLiability: EstateLiability = {
+      ...existingLiability,
+      ...liabilityData,
+      updatedAt: new Date()
+    };
+    
+    this.estateLiabilities.set(id, updatedLiability);
+    return updatedLiability;
+  }
+  
+  // Document methods
+  async getDocument(id: number): Promise<Document | undefined> {
+    return this.documents.get(id);
+  }
+
+  async getDocumentsByCaseId(caseId: number): Promise<Document[]> {
+    return Array.from(this.documents.values()).filter(
+      (document) => document.caseId === caseId
+    );
+  }
+
+  async getDocumentsByType(caseId: number, type: string): Promise<Document[]> {
+    return Array.from(this.documents.values()).filter(
+      (document) => document.caseId === caseId && document.type === type
+    );
+  }
+
+  async createDocument(documentData: InsertDocument): Promise<Document> {
+    const id = this.documentIdCounter++;
+    const now = new Date();
+    
+    const newDocument: Document = {
+      id,
+      caseId: documentData.caseId,
+      type: documentData.type,
+      fileName: documentData.fileName,
+      fileSize: documentData.fileSize,
+      mimeType: documentData.mimeType,
+      filePath: documentData.filePath,
+      uploadedById: documentData.uploadedById,
+      status: documentData.status || "pending",
+      metadata: documentData.metadata || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.documents.set(id, newDocument);
+    return newDocument;
+  }
+
+  async updateDocument(id: number, documentData: Partial<InsertDocument>): Promise<Document | undefined> {
+    const existingDocument = this.documents.get(id);
+    if (!existingDocument) {
+      return undefined;
+    }
+    
+    const updatedDocument: Document = {
+      ...existingDocument,
+      ...documentData,
+      updatedAt: new Date()
+    };
+    
+    this.documents.set(id, updatedDocument);
+    return updatedDocument;
+  }
+  
+  // Task methods
+  async getTask(id: number): Promise<Task | undefined> {
+    return this.tasks.get(id);
+  }
+
+  async getTasksByCaseId(caseId: number): Promise<Task[]> {
+    return Array.from(this.tasks.values()).filter(
+      (task) => task.caseId === caseId
+    );
+  }
+
+  async createTask(taskData: InsertTask): Promise<Task> {
+    const id = this.taskIdCounter++;
+    const now = new Date();
+    
+    const newTask: Task = {
+      id,
+      caseId: taskData.caseId,
+      title: taskData.title,
+      description: taskData.description || null,
+      type: taskData.type || "standard",
+      priority: taskData.priority || "medium",
+      status: taskData.status || "pending",
+      dueDate: taskData.dueDate || null,
+      assignedTo: taskData.assignedTo || null,
+      metadata: taskData.metadata || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.tasks.set(id, newTask);
+    return newTask;
+  }
+
+  async updateTask(id: number, taskData: Partial<InsertTask>): Promise<Task | undefined> {
+    const existingTask = this.tasks.get(id);
+    if (!existingTask) {
+      return undefined;
+    }
+    
+    const updatedTask: Task = {
+      ...existingTask,
+      ...taskData,
+      updatedAt: new Date()
+    };
+    
+    this.tasks.set(id, updatedTask);
+    return updatedTask;
   }
 }
 
@@ -453,4 +779,8 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Choose which storage implementation to use
+// Uncomment to use database storage
 export const storage = new DatabaseStorage();
+
+// Uncomment to use memory storage instead
+// export const storage = new MemStorage();

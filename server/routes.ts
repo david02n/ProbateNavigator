@@ -680,9 +680,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (webhookResponse && webhookResponse.data) {
             console.log('Webhook response data:', webhookResponse.data);
             
-            // Update the document with webhook response
+            // Prepare and update the document with webhook response in a structured way
             await storage.updateDocument(newDocument.id, {
-              notes: `${newDocument.notes}\nWebhook processing: ${JSON.stringify(webhookResponse.data)}`,
+              notes: JSON.stringify({
+                message: 'Document processed by webhook',
+                documentType: category,
+                webhookResponse: webhookResponse.data
+              }),
             });
             
             // Broadcast the update
@@ -697,9 +701,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const errorMessage = error?.message || 'Unknown error';
           console.log('Webhook error (non-critical):', errorMessage);
           
-          // Update the document notes to indicate webhook failure
+          // Update the document notes to indicate webhook failure with structured format
           await storage.updateDocument(newDocument.id, {
-            notes: `${newDocument.notes}\nWebhook processing attempted but failed: ${errorMessage}`
+            notes: JSON.stringify({
+              message: 'Webhook processing failed',
+              documentType: category,
+              error: errorMessage
+            })
           });
         }
       })();

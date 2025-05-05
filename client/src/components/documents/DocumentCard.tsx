@@ -134,96 +134,136 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
   // Try to parse and display extracted document data
   const tryParseExtractedData = (notes: string) => {
     try {
-      // Check if notes contain a webhook response with JSON
-      if (notes.includes('webhookResponse') && notes.includes('```json')) {
-        // Extract the JSON part from markdown code blocks
+      console.log("Processing document notes:", notes);
+      
+      // First try to parse the entire notes as JSON
+      try {
+        const notesObj = JSON.parse(notes);
+        if (notesObj.webhookResponse && notesObj.webhookResponse.content) {
+          notes = notesObj.webhookResponse.content;
+        }
+      } catch (e) {
+        // Not a valid JSON, continue with other parsing methods
+        console.log("Notes are not directly a valid JSON object");
+      }
+      
+      // Extract JSON data from markdown code blocks if present
+      let extractedData = null;
+      
+      // Check for JSON code blocks
+      if (typeof notes === 'string' && notes.includes('```json')) {
+        console.log("Found JSON code block in notes");
         const jsonMatch = notes.match(/```json\s*(\{[\s\S]*?\})\s*```/);
         if (jsonMatch && jsonMatch[1]) {
-          const extractedData = JSON.parse(jsonMatch[1]);
-          
-          // For Death Certificate
-          if (document.type === 'death_certificate' || extractedData.type === 'Death Certificate') {
-            return (
-              <div className="space-y-3">
-                <div className="font-medium text-primary">Death Certificate Details</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {extractedData.firstName || extractedData.surname ? (
-                    <div className="flex items-start gap-2">
-                      <UserIcon className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <div className="font-medium">Name</div>
-                        <div>{`${extractedData.firstName || ''} ${extractedData.surname || ''}`}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  
-                  {extractedData.dateOfBirth ? (
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <div className="font-medium">Date of Birth</div>
-                        <div>{formatDate(extractedData.dateOfBirth)}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  
-                  {extractedData.dateOfDeath ? (
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <div className="font-medium">Date of Death</div>
-                        <div>{formatDate(extractedData.dateOfDeath)}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  
-                  {extractedData.address ? (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <div className="font-medium">Address</div>
-                        <div>{extractedData.address}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  
-                  {extractedData.applicationNumber ? (
-                    <div className="flex items-start gap-2">
-                      <Hash className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <div className="font-medium">Application Number</div>
-                        <div>{extractedData.applicationNumber}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-                
-                <div className="flex gap-2 mt-3">
-                  <Badge variant="outline" className="bg-blue-50">Extracted Data</Badge>
-                  <Badge variant="outline" className="bg-green-50">Verified</Badge>
-                </div>
-              </div>
-            );
+          try {
+            extractedData = JSON.parse(jsonMatch[1]);
+            console.log("Extracted data from JSON code block:", extractedData);
+          } catch (e) {
+            console.error("Failed to parse JSON from code block:", e);
           }
-          
-          // Add more document type renderers here (ID, will, etc.)
-          
-          // Generic fallback for any other JSON data
+        }
+      }
+      
+      // Check if it might be escaped JSON
+      if (!extractedData && typeof notes === 'string' && notes.includes('"type"')) {
+        try {
+          // Try to find a JSON-like structure by looking for opening and closing braces
+          const jsonCandidate = notes.replace(/\\"/g, '"').match(/\{[\s\S]*\}/);
+          if (jsonCandidate) {
+            extractedData = JSON.parse(jsonCandidate[0]);
+            console.log("Extracted data from potential JSON structure:", extractedData);
+          }
+        } catch (e) {
+          console.error("Failed to parse potential JSON structure:", e);
+        }
+      }
+      
+      // If we have extracted data, render the appropriate component
+      if (extractedData) {
+        // For Death Certificate
+        if (document.type === 'death_certificate' || 
+            (extractedData.type && extractedData.type.toLowerCase().includes('death'))) {
+          console.log("Rendering death certificate format");
           return (
-            <div>
-              <div className="font-medium mb-2">Extracted Information:</div>
-              <div className="grid grid-cols-1 gap-2">
-                {Object.entries(extractedData).map(([key, value]) => (
-                  <div key={key} className="flex gap-2">
-                    <span className="font-medium">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span>
-                    <span>{String(value)}</span>
+            <div className="space-y-3">
+              <div className="font-medium text-primary">Death Certificate Details</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(extractedData.firstName || extractedData.surname) && (
+                  <div className="flex items-start gap-2">
+                    <UserIcon className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="font-medium">Name</div>
+                      <div>{`${extractedData.firstName || ''} ${extractedData.surname || ''}`}</div>
+                    </div>
                   </div>
-                ))}
+                )}
+                
+                {extractedData.dateOfBirth && (
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="font-medium">Date of Birth</div>
+                      <div>{formatDate(extractedData.dateOfBirth)}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {extractedData.dateOfDeath && (
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="font-medium">Date of Death</div>
+                      <div>{formatDate(extractedData.dateOfDeath)}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {extractedData.address && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="font-medium">Address</div>
+                      <div>{extractedData.address}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {extractedData.applicationNumber && (
+                  <div className="flex items-start gap-2">
+                    <Hash className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="font-medium">Application Number</div>
+                      <div>{extractedData.applicationNumber}</div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <Badge variant="outline" className="mt-3 bg-blue-50">Extracted Data</Badge>
+              
+              <div className="flex gap-2 mt-3">
+                <Badge variant="outline" className="bg-blue-50">Extracted Data</Badge>
+                <Badge variant="outline" className="bg-green-50">Verified</Badge>
+              </div>
             </div>
           );
         }
+        
+        // Add more document type renderers here (ID, will, etc.)
+        
+        // Generic fallback for any other JSON data
+        return (
+          <div>
+            <div className="font-medium mb-2">Extracted Information:</div>
+            <div className="grid grid-cols-1 gap-2">
+              {Object.entries(extractedData).map(([key, value]) => (
+                <div key={key} className="flex gap-2">
+                  <span className="font-medium">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span>
+                  <span>{String(value)}</span>
+                </div>
+              ))}
+            </div>
+            <Badge variant="outline" className="mt-3 bg-blue-50">Extracted Data</Badge>
+          </div>
+        );
       }
       
       // If we can't parse JSON or find json codeblocks, display the notes as is
@@ -231,17 +271,18 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
         <div>
           <div className="font-medium mb-1">Document Notes:</div>
           <div className="text-gray-600 whitespace-pre-wrap">
-            {notes}
+            {typeof notes === 'string' ? notes : JSON.stringify(notes, null, 2)}
           </div>
         </div>
       );
     } catch (error) {
+      console.error("Error parsing document notes:", error);
       // If there's an error parsing, just show the original notes
       return (
         <div>
           <div className="font-medium mb-1">Document Notes:</div>
           <div className="text-gray-600 whitespace-pre-wrap">
-            {notes}
+            {typeof notes === 'string' ? notes : JSON.stringify(notes, null, 2)}
           </div>
         </div>
       );

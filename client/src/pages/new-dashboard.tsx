@@ -160,6 +160,16 @@ const NewDashboardPage: React.FC = () => {
   const deathCertificate = documents.find(doc => 
     doc.type === 'death_certificate' && doc.status === 'processed'
   );
+  
+  // Check if will document has been uploaded
+  const hasWill = documents.some(doc => 
+    doc.type === 'will' && doc.status === 'processed'
+  );
+  
+  // Find the will document
+  const willDocument = documents.find(doc => 
+    doc.type === 'will' && doc.status === 'processed'
+  );
 
   // Calculate progress based on steps completed
   let progressPercent = 0;
@@ -176,6 +186,9 @@ const NewDashboardPage: React.FC = () => {
     }
     if (hasDeathCertificate) {
       progressPercent += 15; // Death certificate uploaded and processed
+    }
+    if (assessmentResult.hasWill && hasWill) {
+      progressPercent += 10; // Will document uploaded and processed
     }
   }
   

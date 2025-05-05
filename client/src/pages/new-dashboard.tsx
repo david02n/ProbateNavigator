@@ -500,32 +500,52 @@ const NewDashboardPage: React.FC = () => {
                           
                           {/* Task 4 - Will Upload (Conditional) */}
                           {assessmentResult?.hasWill && (
-                            <div className="border rounded-lg p-4">
+                            <div className={`border rounded-lg p-4 ${hasWill ? '' : 'border-amber-200 bg-amber-50'}`}>
                               <div className="flex justify-between">
                                 <div className="flex items-start">
                                   <div className="flex-shrink-0 mt-0.5">
-                                    <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center">
-                                      <Circle className="h-3 w-3 text-white" />
+                                    <div className={`h-5 w-5 rounded-full ${hasWill ? 'bg-green-500' : 'bg-amber-500'} flex items-center justify-center`}>
+                                      {hasWill ? (
+                                        <CheckCheck className="h-3 w-3 text-white" />
+                                      ) : (
+                                        <Circle className="h-3 w-3 text-white" />
+                                      )}
                                     </div>
                                   </div>
                                   <div className="ml-3">
                                     <h4 className="font-medium">Upload Will</h4>
                                     <p className="text-sm text-gray-500 mt-1">
-                                      Upload the original will and any codicils. This must be the official signed version.
+                                      {hasWill 
+                                        ? "Will document successfully uploaded and processed." 
+                                        : "Upload the original will and any codicils. This must be the official signed version."}
                                     </p>
+                                    {hasWill && willDocument && (
+                                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                        <span className="text-green-600 font-medium">Document uploaded successfully</span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                                <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full h-fit">Not Started</span>
+                                <span className={`text-xs ${hasWill ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'} px-2.5 py-0.5 rounded-full h-fit`}>
+                                  {hasWill ? 'Complete' : 'Required'}
+                                </span>
                               </div>
                               <div className="ml-8 mt-2">
                                 <Button 
                                   size="sm" 
-                                  className="text-xs h-7" 
-                                  variant="outline"
+                                  className={`text-xs h-7 ${hasWill ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-[#002B49] hover:bg-[#002B49]/90 text-white'}`}
+                                  variant={hasWill ? "outline" : "default"}
                                   disabled={!activeCase}
-                                  onClick={() => activeCase ? navigate("/documents") : null}
+                                  onClick={() => {
+                                    if (!activeCase) return;
+                                    if (hasWill && willDocument) {
+                                      window.open(`/api/documents/${willDocument.id}/view`, '_blank');
+                                    } else {
+                                      navigate("/documents");
+                                    }
+                                  }}
                                 >
-                                  Upload
+                                  {hasWill ? 'View' : 'Upload'}
                                 </Button>
                               </div>
                             </div>

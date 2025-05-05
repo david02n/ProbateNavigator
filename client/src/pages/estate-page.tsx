@@ -14,13 +14,24 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
-  Loader2
+  Loader2,
+  Pencil,
+  Trash
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { EstateAsset, EstateLiability, ProbateCase } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import AssetForm, { AssetFormValues } from "@/components/estate/AssetForm";
+import LiabilityForm, { LiabilityFormValues } from "@/components/estate/LiabilityForm";
 
 interface Asset extends EstateAsset {
   name?: string;
@@ -199,7 +210,13 @@ const EstatePage: React.FC = () => {
     }).format(value);
   };
   
-  // Handle add asset
+  // Asset/liability modal state
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [isLiabilityModalOpen, setIsLiabilityModalOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<EstateAsset | undefined>(undefined);
+  const [selectedLiability, setSelectedLiability] = useState<EstateLiability | undefined>(undefined);
+  
+  // Handle add/edit asset
   const handleAddAsset = () => {
     if (!activeCaseId) {
       toast({
@@ -210,17 +227,45 @@ const EstatePage: React.FC = () => {
       return;
     }
     
-    // This would usually open a modal for data input
-    // For now, we'll create a dummy asset for demonstration
-    createAssetMutation.mutate({
-      caseId: activeCaseId,
-      type: "property",
-      description: "New Property",
-      value: "0",
-    });
+    setSelectedAsset(undefined); // Reset selected asset for adding new
+    setIsAssetModalOpen(true);
   };
   
-  // Handle add liability
+  // Handle edit asset
+  const handleEditAsset = (asset: EstateAsset) => {
+    setSelectedAsset(asset);
+    setIsAssetModalOpen(true);
+  };
+  
+  // Handle asset form submission
+  const handleAssetSubmit = (data: any) => {
+    if (!activeCaseId) return;
+    
+    if (selectedAsset) {
+      // Edit existing asset
+      // This would be implemented in a future update
+      toast({
+        title: "Feature coming soon",
+        description: "Editing assets will be available in a future update",
+      });
+      setIsAssetModalOpen(false);
+    } else {
+      // Create new asset
+      createAssetMutation.mutate({
+        caseId: activeCaseId,
+        type: data.type,
+        description: data.description,
+        value: data.value,
+        address: data.address,
+        institution: data.institution,
+        accountNumber: data.accountNumber,
+        notes: data.notes,
+      });
+      setIsAssetModalOpen(false);
+    }
+  };
+  
+  // Handle add/edit liability
   const handleAddLiability = () => {
     if (!activeCaseId) {
       toast({
@@ -231,14 +276,41 @@ const EstatePage: React.FC = () => {
       return;
     }
     
-    // This would usually open a modal for data input
-    // For now, we'll create a dummy liability for demonstration
-    createLiabilityMutation.mutate({
-      caseId: activeCaseId,
-      type: "loan",
-      description: "New Loan",
-      amount: "0",
-    });
+    setSelectedLiability(undefined); // Reset selected liability for adding new
+    setIsLiabilityModalOpen(true);
+  };
+  
+  // Handle edit liability
+  const handleEditLiability = (liability: EstateLiability) => {
+    setSelectedLiability(liability);
+    setIsLiabilityModalOpen(true);
+  };
+  
+  // Handle liability form submission
+  const handleLiabilitySubmit = (data: any) => {
+    if (!activeCaseId) return;
+    
+    if (selectedLiability) {
+      // Edit existing liability
+      // This would be implemented in a future update
+      toast({
+        title: "Feature coming soon",
+        description: "Editing liabilities will be available in a future update",
+      });
+      setIsLiabilityModalOpen(false);
+    } else {
+      // Create new liability
+      createLiabilityMutation.mutate({
+        caseId: activeCaseId,
+        type: data.type,
+        description: data.description,
+        amount: data.amount,
+        institution: data.institution,
+        accountNumber: data.accountNumber,
+        notes: data.notes,
+      });
+      setIsLiabilityModalOpen(false);
+    }
   };
   
   const isLoading = isLoadingCases || isLoadingAssets || isLoadingLiabilities;

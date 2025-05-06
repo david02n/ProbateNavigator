@@ -181,7 +181,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
       };
       
       // Determine which endpoint to use based on the classification
-      const endpoint = isAsset ? '/api/estate/assets' : '/api/estate/liabilities';
+      const endpoint = isAsset ? '/api/assets' : '/api/liabilities';
       
       // Make the API request
       console.log(`Sending request to ${endpoint} with data:`, itemData);

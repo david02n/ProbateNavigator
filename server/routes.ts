@@ -409,6 +409,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create asset" });
     }
   });
+  
+  // Delete an asset
+  app.delete("/api/assets/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const assetId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      // Get the asset to verify ownership
+      const asset = await storage.getEstateAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+      
+      // Get the probate case to verify it belongs to the user
+      const probateCase = await storage.getProbateCase(asset.caseId);
+      if (!probateCase || probateCase.userId !== userId) {
+        return res.status(403).json({ error: "Not authorized to delete this asset" });
+      }
+      
+      // Delete the asset
+      await storage.deleteEstateAsset(assetId);
+      res.status(200).json({ message: "Asset deleted successfully" });
+    } catch (err) {
+      console.error("Error deleting asset:", err);
+      res.status(500).json({ error: "Failed to delete asset" });
+    }
+  });
 
   // API routes for estate liabilities
   app.get("/api/liabilities/:caseId", async (req, res) => {

@@ -376,7 +376,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const assets = await storage.getEstateAssetsByCaseId(caseId);
-      res.json(assets);
+      
+      // Convert document_id to documentId for client use
+      const formattedAssets = assets.map(asset => {
+        if (asset.document_id !== null && asset.document_id !== undefined) {
+          return {
+            ...asset,
+            documentId: asset.document_id,
+            document_id: undefined // Remove the snake_case version
+          };
+        }
+        return asset;
+      });
+      
+      res.json(formattedAssets);
     } catch (error) {
       console.error("Error fetching assets:", error);
       res.status(500).json({ error: "Failed to fetch assets" });
@@ -398,9 +411,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Probate case not found" });
       }
       
+      // Convert documentId to document_id if it exists (camelCase to snake_case)
+      const { documentId, ...restAssetData } = assetData;
+      
       const newAsset = await storage.createEstateAsset({
-        ...assetData,
-        caseId
+        ...restAssetData,
+        caseId,
+        ...(documentId && { document_id: documentId }) // Only include if documentId is present
       });
       
       res.status(201).json(newAsset);
@@ -457,7 +474,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const liabilities = await storage.getEstateLiabilitiesByCaseId(caseId);
-      res.json(liabilities);
+      
+      // Convert document_id to documentId for client use
+      const formattedLiabilities = liabilities.map(liability => {
+        if (liability.document_id !== null && liability.document_id !== undefined) {
+          return {
+            ...liability,
+            documentId: liability.document_id,
+            document_id: undefined // Remove the snake_case version
+          };
+        }
+        return liability;
+      });
+      
+      res.json(formattedLiabilities);
     } catch (error) {
       console.error("Error fetching liabilities:", error);
       res.status(500).json({ error: "Failed to fetch liabilities" });
@@ -479,9 +509,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Probate case not found" });
       }
       
+      // Convert documentId to document_id if it exists (camelCase to snake_case)
+      const { documentId, ...restLiabilityData } = liabilityData;
+      
       const newLiability = await storage.createEstateLiability({
-        ...liabilityData,
-        caseId
+        ...restLiabilityData,
+        caseId,
+        ...(documentId && { document_id: documentId }) // Only include if documentId is present
       });
       
       res.status(201).json(newLiability);

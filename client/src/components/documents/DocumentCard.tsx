@@ -10,8 +10,11 @@ import {
   Eye,
   Loader2,
   Copy,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Plus,
+  Minus
 } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
 import { Button } from '@/components/ui/button';
 import { 
   AlertDialog,
@@ -32,6 +35,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { deleteDocument } from '@/lib/documentService';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface DocumentCardProps {
   document: {
@@ -55,6 +60,8 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [includeInEstate, setIncludeInEstate] = useState(false);
+  const [isAddingToEstate, setIsAddingToEstate] = useState(false);
   
   // Function to copy text to clipboard
   const copyToClipboard = (text: string, fieldName: string) => {
@@ -140,6 +147,54 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
       month: 'long',
       year: 'numeric'
     }).format(date);
+  };
+  
+  // Handle adding financial document to estate
+  const queryClient = useQueryClient();
+  const handleAddToEstate = async (isAsset: boolean) => {
+    if (!extractedData || isAddingToEstate) return;
+    
+    setIsAddingToEstate(true);
+    try {
+      // Prepare data based on classification
+      const itemData = {
+        caseId: 1, // Assuming case ID 1 for now
+        name: extractedData.accountType || 'Financial Item',
+        description: `From document: ${document.name || document.filename}`,
+        value: extractedData.balance || 0,
+        notes: JSON.stringify(extractedData),
+        institution: extractedData.institutionName || 'Unknown',
+        accountHolder: extractedData.accountHolder || '',
+        accountNumber: extractedData.accountNumber || '',
+        documentId: document.id
+      };
+      
+      let endpoint = isAsset ? '/api/estate/assets' : '/api/estate/liabilities';
+      
+      const response = await apiRequest('POST', endpoint, itemData);
+      const result = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: `${isAsset ? 'Asset' : 'Liability'} added`,
+          description: `Document has been added to the estate as ${isAsset ? 'an asset' : 'a liability'}.`,
+        });
+        // Invalidate the assets or liabilities query to refresh the list
+        queryClient.invalidateQueries({ queryKey: [isAsset ? '/api/estate/assets' : '/api/estate/liabilities'] });
+      } else {
+        throw new Error(result.message || 'An error occurred');
+      }
+    } catch (error) {
+      console.error("Error adding to estate:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add document to estate',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAddingToEstate(false);
+      setIncludeInEstate(true); // Mark as included
+    }
   };
   
   // Check if document has extractable data

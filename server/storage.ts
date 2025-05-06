@@ -66,12 +66,14 @@ export interface IStorage {
   getEstateAssetsByCaseId(caseId: number): Promise<EstateAsset[]>;
   createEstateAsset(assetData: InsertEstateAsset): Promise<EstateAsset>;
   updateEstateAsset(id: number, assetData: Partial<InsertEstateAsset>): Promise<EstateAsset | undefined>;
+  deleteEstateAsset(id: number): Promise<void>;
   
   // Estate Liability methods
   getEstateLiability(id: number): Promise<EstateLiability | undefined>;
   getEstateLiabilitiesByCaseId(caseId: number): Promise<EstateLiability[]>;
   createEstateLiability(liabilityData: InsertEstateLiability): Promise<EstateLiability>;
   updateEstateLiability(id: number, liabilityData: Partial<InsertEstateLiability>): Promise<EstateLiability | undefined>;
+  deleteEstateLiability(id: number): Promise<void>;
   
   // Document methods
   getDocument(id: number): Promise<Document | undefined>;
@@ -421,6 +423,12 @@ export class MemStorage implements IStorage {
     return updatedAsset;
   }
   
+  async deleteEstateAsset(id: number): Promise<void> {
+    if (this.estateAssets.has(id)) {
+      this.estateAssets.delete(id);
+    }
+  }
+  
   // Estate Liability methods
   async getEstateLiability(id: number): Promise<EstateLiability | undefined> {
     return this.estateLiabilities.get(id);
@@ -467,6 +475,12 @@ export class MemStorage implements IStorage {
     
     this.estateLiabilities.set(id, updatedLiability);
     return updatedLiability;
+  }
+  
+  async deleteEstateLiability(id: number): Promise<void> {
+    if (this.estateLiabilities.has(id)) {
+      this.estateLiabilities.delete(id);
+    }
   }
   
   // Document methods
@@ -708,6 +722,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(estateAssets.id, id))
       .returning();
     return updatedAsset;
+  }
+  
+  async deleteEstateAsset(id: number): Promise<void> {
+    await db
+      .delete(estateAssets)
+      .where(eq(estateAssets.id, id));
   }
 
   // Estate Liability methods

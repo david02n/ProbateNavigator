@@ -490,6 +490,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create liability" });
     }
   });
+  
+  // Delete a liability
+  app.delete("/api/liabilities/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const liabilityId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      // Get the liability to verify ownership
+      const liability = await storage.getEstateLiability(liabilityId);
+      if (!liability) {
+        return res.status(404).json({ error: "Liability not found" });
+      }
+      
+      // Get the probate case to verify it belongs to the user
+      const probateCase = await storage.getProbateCase(liability.caseId);
+      if (!probateCase || probateCase.userId !== userId) {
+        return res.status(403).json({ error: "Not authorized to delete this liability" });
+      }
+      
+      // Delete the liability
+      await storage.deleteEstateLiability(liabilityId);
+      res.status(200).json({ message: "Liability deleted successfully" });
+    } catch (err) {
+      console.error("Error deleting liability:", err);
+      res.status(500).json({ error: "Failed to delete liability" });
+    }
+  });
   // API routes for documents
   
   // Get all documents for the authenticated user

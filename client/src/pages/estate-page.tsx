@@ -592,8 +592,35 @@ const EstatePage: React.FC = () => {
                               <p className="text-sm text-gray-500">{asset.institution || asset.address || ""}</p>
                             </div>
                           </div>
-                          <div className="font-medium text-green-600">
-                            {asset.value ? formatCurrency(parseFloat(asset.value.toString())) : "£0"}
+                          <div className="flex items-center">
+                            <div className="font-medium text-green-600 mr-4">
+                              {asset.value ? formatCurrency(parseFloat(asset.value.toString())) : "£0"}
+                            </div>
+                            <div className="flex space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditAsset(asset)}
+                                className="text-gray-500 hover:text-primary"
+                              >
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAsset(asset)}
+                                className="text-gray-500 hover:text-red-600"
+                                disabled={deleteAssetMutation.isPending}
+                              >
+                                {deleteAssetMutation.isPending && deleteAssetMutation.variables === asset.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -658,8 +685,35 @@ const EstatePage: React.FC = () => {
                               <p className="text-sm text-gray-500">{liability.creditor || liability.description}</p>
                             </div>
                           </div>
-                          <div className="font-medium text-red-600">
-                            {liability.amount ? formatCurrency(parseFloat(liability.amount.toString())) : "£0"}
+                          <div className="flex items-center">
+                            <div className="font-medium text-red-600 mr-4">
+                              {liability.amount ? formatCurrency(parseFloat(liability.amount.toString())) : "£0"}
+                            </div>
+                            <div className="flex space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditLiability(liability)}
+                                className="text-gray-500 hover:text-primary"
+                              >
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteLiability(liability)}
+                                className="text-gray-500 hover:text-red-600"
+                                disabled={deleteLiabilityMutation.isPending}
+                              >
+                                {deleteLiabilityMutation.isPending && deleteLiabilityMutation.variables === liability.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>

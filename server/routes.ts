@@ -523,6 +523,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // API routes for documents
   
+  // Update a document's metadata (e.g., includedInEstate flag)
+  app.patch("/api/documents/:id/metadata", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const documentId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      const metadata = req.body.metadata;
+      
+      // Get the document to verify ownership
+      const document = await storage.getDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      
+      // Get the probate case to verify it belongs to the user
+      const probateCase = await storage.getProbateCase(document.caseId);
+      if (!probateCase || probateCase.userId !== userId) {
+        return res.status(403).json({ error: "Not authorized to update this document" });
+      }
+      
+      // Update the document metadata
+      const updatedDocument = await storage.updateDocument(documentId, { 
+        metadata 
+      });
+      
+      // If we're removing from estate, remove the linked asset/liability
+      if (metadata && metadata.includedInEstate === false && metadata.estateItemId) {
+        if (metadata.estateItemType === 'asset') {
+          await storage.deleteEstateAsset(metadata.estateItemId);
+        } else if (metadata.estateItemType === 'liability') {
+          await storage.deleteEstateLiability(metadata.estateItemId);
+        }
+      }
+      
+      res.json(updatedDocument);
+    } catch (error) {
+      console.error("Error updating document metadata:", error);
+      res.status(500).json({ error: "Failed to update document metadata" });
+    }
+  });
+  
   // Get all documents for the authenticated user
   app.get("/api/documents", async (req, res) => {
     if (!req.isAuthenticated()) {

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, integer, numeric, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer, numeric, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -77,6 +77,7 @@ export const executors = pgTable("executors", {
 export const estateAssets = pgTable("estate_assets", {
   id: serial("id").primaryKey(),
   caseId: integer("case_id").references(() => probateCases.id).notNull(),
+  documentId: integer("document_id").references(() => documents.id), // Reference to the source document
   type: text("type").notNull(), // property, bank_account, investment, vehicle, etc.
   description: text("description").notNull(),
   value: numeric("value"),
@@ -95,6 +96,7 @@ export const estateAssets = pgTable("estate_assets", {
 export const estateLiabilities = pgTable("estate_liabilities", {
   id: serial("id").primaryKey(),
   caseId: integer("case_id").references(() => probateCases.id).notNull(),
+  documentId: integer("document_id").references(() => documents.id), // Reference to the source document
   type: text("type").notNull(), // mortgage, loan, credit_card, utility, tax, funeral_expenses
   description: text("description").notNull(),
   amount: numeric("amount"),
@@ -119,6 +121,7 @@ export const documents = pgTable("documents", {
   storagePath: text("storage_path").notNull(),
   status: text("status").default("processing"), // processing, verified, rejected
   notes: text("notes"),
+  metadata: jsonb("metadata").$type<{ includedInEstate?: boolean, estateItemType?: string, estateItemId?: number }>(), // For storing additional document info
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -201,6 +204,7 @@ export const insertExecutorSchema = createInsertSchema(executors)
 export const insertEstateAssetSchema = createInsertSchema(estateAssets)
   .pick({
     caseId: true,
+    documentId: true,
     type: true,
     description: true,
     value: true,
@@ -214,6 +218,7 @@ export const insertEstateAssetSchema = createInsertSchema(estateAssets)
 export const insertEstateLiabilitySchema = createInsertSchema(estateLiabilities)
   .pick({
     caseId: true,
+    documentId: true,
     type: true,
     description: true,
     amount: true,
@@ -233,6 +238,7 @@ export const insertDocumentSchema = createInsertSchema(documents)
     storagePath: true,
     status: true,
     notes: true,
+    metadata: true,
   });
 
 export const insertTaskSchema = createInsertSchema(tasks)

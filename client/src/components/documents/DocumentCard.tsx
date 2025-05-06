@@ -66,6 +66,13 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
   const [includeInEstate, setIncludeInEstate] = useState(false);
   const [isAddingToEstate, setIsAddingToEstate] = useState(false);
   
+  // Check if document is already included in estate on component mount
+  useEffect(() => {
+    if (document.metadata && document.metadata.includedInEstate) {
+      setIncludeInEstate(true);
+    }
+  }, [document.metadata]);
+  
   // For API error handling
   const [apiError, setApiError] = useState<string | null>(null);
   

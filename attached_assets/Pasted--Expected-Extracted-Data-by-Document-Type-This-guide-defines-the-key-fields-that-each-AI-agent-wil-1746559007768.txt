@@ -1,0 +1,97 @@
+📑 Expected Extracted Data by Document Type
+This guide defines the key fields that each AI agent will extract from documents uploaded under each category in the Documents tab.
+
+Each set of fields will be returned as a structured JSON object and displayed in the UI (e.g. via expandable panels or modals).
+
+🔐 1. Identification Document
+Examples: Passport, driving licence, proof of address
+
+json
+Copy
+Edit
+{
+  "type": "Identification Document",
+  "firstName": "string",
+  "surname": "string",
+  "dateOfBirth": "YYYY-MM-DD",
+  "documentNumber": "string",
+  "expiryDate": "YYYY-MM-DD",
+  "documentType": "string",        // e.g. "Passport"
+  "issuingCountry": "string"       // e.g. "UK"
+}
+⚰️ 2. Death Certificate
+Examples: UK death registration documents
+
+json
+Copy
+Edit
+{
+  "type": "Death Certificate",
+  "firstName": "string",
+  "surname": "string",
+  "dateOfBirth": "YYYY-MM-DD",
+  "dateOfDeath": "YYYY-MM-DD",
+  "address": "string",
+  "applicationNumber": "string"
+}
+✍️ 3. Will & Codicils
+Examples: Original will, amendments, handwritten codicils
+
+json
+Copy
+Edit
+{
+  "type": "Will or Codicil",
+  "testatorName": "string",
+  "dateOfWill": "YYYY-MM-DD",
+  "beneficiaries": ["string"],
+  "executors": ["string"],
+  "codicilDates": ["YYYY-MM-DD"],
+  "witnesses": ["string"]
+}
+🏠 4. Property Documents
+Examples: Title deeds, HM Land Registry records, valuations
+
+json
+Copy
+Edit
+{
+  "type": "Property Document",
+  "ownerName": "string",
+  "propertyAddress": "string",
+  "estimatedValue": number,
+  "valuationDate": "YYYY-MM-DD",
+  "documentType": "string",         // e.g. "Valuation Report"
+  "landRegistryNumber": "string"
+}
+💰 5. Financial Documents
+Examples: Bank statements, investment summaries, savings accounts
+
+json
+Copy
+Edit
+{
+  "type": "Financial Document",
+  "accountHolder": "string",
+  "institutionName": "string",
+  "accountNumber": "string",
+  "balance": number,
+  "statementDate": "YYYY-MM-DD",
+  "currency": "string",              // e.g. "GBP"
+  "accountType": "string"            // e.g. "Current Account"
+}
+🧾 6. Tax Documents
+Examples: IHT forms, HMRC tax returns, estate tax summaries
+
+json
+Copy
+Edit
+{
+  "type": "Tax Document",
+  "taxpayerName": "string",
+  "documentType": "string",           // e.g. "IHT205"
+  "taxYear": "YYYY-YYYY",
+  "totalTaxDue": number,
+  "referenceNumber": "string",
+  "submissionDate": "YYYY-MM-DD"
+}

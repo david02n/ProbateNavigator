@@ -307,7 +307,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
               {extractedData ? (
                 <div className="bg-gray-50 rounded-md p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Type */}
+                    {/* Document Type */}
                     <div className="flex flex-col space-y-1">
                       <div className="text-xs text-gray-500">Type</div>
                       <div className="flex items-center justify-between">
@@ -327,8 +327,10 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
                         </Button>
                       </div>
                     </div>
+
+                    {/* ======== COMMON FIELDS ACROSS DOCUMENT TYPES ======== */}
                     
-                    {/* Full Name */}
+                    {/* Name Fields */}
                     {(extractedData.firstName || extractedData.surname) && (
                       <div className="flex flex-col space-y-1">
                         <div className="text-xs text-gray-500">Full Name</div>
@@ -343,6 +345,98 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
                             onClick={() => copyToClipboard(
                               `${extractedData.firstName || ''} ${extractedData.surname || ''}`, 
                               'Full Name'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Testator Name (Will) */}
+                    {extractedData.testatorName && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Testator</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.testatorName}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.testatorName, 
+                              'Testator Name'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Account Holder (Financial) */}
+                    {extractedData.accountHolder && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Account Holder</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.accountHolder}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.accountHolder, 
+                              'Account Holder'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Owner Name (Property) */}
+                    {extractedData.ownerName && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Owner</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.ownerName}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.ownerName, 
+                              'Owner Name'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Taxpayer Name (Tax) */}
+                    {extractedData.taxpayerName && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Taxpayer</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.taxpayerName}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.taxpayerName, 
+                              'Taxpayer Name'
                             )}
                           >
                             <Copy className="h-3 w-3" />
@@ -396,6 +490,121 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
                         </div>
                       </div>
                     )}
+
+                    {/* Date of Will */}
+                    {extractedData.dateOfWill && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Date of Will</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {new Date(extractedData.dateOfWill).toLocaleDateString('en-GB')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              new Date(extractedData.dateOfWill).toLocaleDateString('en-GB'), 
+                              'Date of Will'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Valuation Date */}
+                    {extractedData.valuationDate && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Valuation Date</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {new Date(extractedData.valuationDate).toLocaleDateString('en-GB')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              new Date(extractedData.valuationDate).toLocaleDateString('en-GB'), 
+                              'Valuation Date'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Statement Date */}
+                    {extractedData.statementDate && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Statement Date</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {new Date(extractedData.statementDate).toLocaleDateString('en-GB')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              new Date(extractedData.statementDate).toLocaleDateString('en-GB'), 
+                              'Statement Date'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Submission Date */}
+                    {extractedData.submissionDate && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Submission Date</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {new Date(extractedData.submissionDate).toLocaleDateString('en-GB')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              new Date(extractedData.submissionDate).toLocaleDateString('en-GB'), 
+                              'Submission Date'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expiry Date */}
+                    {extractedData.expiryDate && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Expiry Date</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {new Date(extractedData.expiryDate).toLocaleDateString('en-GB')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              new Date(extractedData.expiryDate).toLocaleDateString('en-GB'), 
+                              'Expiry Date'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Address */}
                     {extractedData.address && (
@@ -412,6 +621,29 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
                             onClick={() => copyToClipboard(
                               extractedData.address, 
                               'Address'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Property Address */}
+                    {extractedData.propertyAddress && (
+                      <div className="flex flex-col space-y-1 col-span-2">
+                        <div className="text-xs text-gray-500">Property Address</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.propertyAddress}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.propertyAddress, 
+                              'Property Address'
                             )}
                           >
                             <Copy className="h-3 w-3" />
@@ -442,25 +674,440 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
                         </div>
                       </div>
                     )}
-                    
-                    {/* Other data fields */}
-                    {Object.entries(extractedData).filter(([key]) => 
-                      !['type', 'firstName', 'surname', 'dateOfBirth', 'dateOfDeath', 'address', 'applicationNumber'].includes(key)
-                    ).map(([key, value]) => (
-                      <div key={key} className="flex flex-col space-y-1">
-                        <div className="text-xs text-gray-500">
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                        </div>
+
+                    {/* Document Number */}
+                    {extractedData.documentNumber && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Document Number</div>
                         <div className="flex items-center justify-between">
                           <div className="font-medium">
-                            {String(value)}
+                            {extractedData.documentNumber}
                           </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             className="h-6 w-6"
                             onClick={() => copyToClipboard(
-                              String(value), 
+                              extractedData.documentNumber, 
+                              'Document Number'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Document Type */}
+                    {extractedData.documentType && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Document Type</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.documentType}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.documentType, 
+                              'Document Type'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Issuing Country */}
+                    {extractedData.issuingCountry && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Issuing Country</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.issuingCountry}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.issuingCountry, 
+                              'Issuing Country'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Institution Name */}
+                    {extractedData.institutionName && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Institution</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.institutionName}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.institutionName, 
+                              'Institution'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Account Number */}
+                    {extractedData.accountNumber && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Account Number</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.accountNumber}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.accountNumber, 
+                              'Account Number'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Account Type */}
+                    {extractedData.accountType && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Account Type</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.accountType}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.accountType, 
+                              'Account Type'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Land Registry Number */}
+                    {extractedData.landRegistryNumber && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Land Registry Number</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.landRegistryNumber}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.landRegistryNumber, 
+                              'Land Registry Number'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tax Year */}
+                    {extractedData.taxYear && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Tax Year</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.taxYear}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.taxYear, 
+                              'Tax Year'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reference Number */}
+                    {extractedData.referenceNumber && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Reference Number</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.referenceNumber}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.referenceNumber, 
+                              'Reference Number'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Currency */}
+                    {extractedData.currency && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Currency</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.currency}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.currency, 
+                              'Currency'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Numeric values */}
+                    {extractedData.balance !== undefined && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Balance</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {typeof extractedData.balance === 'number' 
+                              ? new Intl.NumberFormat('en-GB', { 
+                                  style: 'currency', 
+                                  currency: extractedData.currency || 'GBP' 
+                                }).format(extractedData.balance)
+                              : extractedData.balance
+                            }
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              String(extractedData.balance), 
+                              'Balance'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {extractedData.estimatedValue !== undefined && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Estimated Value</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {typeof extractedData.estimatedValue === 'number' 
+                              ? new Intl.NumberFormat('en-GB', { 
+                                  style: 'currency', 
+                                  currency: 'GBP' 
+                                }).format(extractedData.estimatedValue)
+                              : extractedData.estimatedValue
+                            }
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              String(extractedData.estimatedValue), 
+                              'Estimated Value'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {extractedData.totalTaxDue !== undefined && (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-xs text-gray-500">Total Tax Due</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {typeof extractedData.totalTaxDue === 'number' 
+                              ? new Intl.NumberFormat('en-GB', { 
+                                  style: 'currency', 
+                                  currency: 'GBP' 
+                                }).format(extractedData.totalTaxDue)
+                              : extractedData.totalTaxDue
+                            }
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              String(extractedData.totalTaxDue), 
+                              'Total Tax Due'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Array fields */}
+                    {extractedData.beneficiaries && extractedData.beneficiaries.length > 0 && (
+                      <div className="flex flex-col space-y-1 col-span-2">
+                        <div className="text-xs text-gray-500">Beneficiaries</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.beneficiaries.join(', ')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.beneficiaries.join(', '), 
+                              'Beneficiaries'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {extractedData.executors && extractedData.executors.length > 0 && (
+                      <div className="flex flex-col space-y-1 col-span-2">
+                        <div className="text-xs text-gray-500">Executors</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.executors.join(', ')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.executors.join(', '), 
+                              'Executors'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {extractedData.witnesses && extractedData.witnesses.length > 0 && (
+                      <div className="flex flex-col space-y-1 col-span-2">
+                        <div className="text-xs text-gray-500">Witnesses</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.witnesses.join(', ')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.witnesses.join(', '), 
+                              'Witnesses'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {extractedData.codicilDates && extractedData.codicilDates.length > 0 && (
+                      <div className="flex flex-col space-y-1 col-span-2">
+                        <div className="text-xs text-gray-500">Codicil Dates</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">
+                            {extractedData.codicilDates.map((date: string) => 
+                              new Date(date).toLocaleDateString('en-GB')
+                            ).join(', ')}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(
+                              extractedData.codicilDates.map((date: string) => 
+                                new Date(date).toLocaleDateString('en-GB')
+                              ).join(', '), 
+                              'Codicil Dates'
+                            )}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Any remaining fields not explicitly handled */}
+                    {Object.entries(extractedData).filter(([key]) => 
+                      ![
+                        'type', 'firstName', 'surname', 'dateOfBirth', 'dateOfDeath', 'address', 
+                        'applicationNumber', 'documentNumber', 'expiryDate', 'documentType', 'issuingCountry',
+                        'testatorName', 'dateOfWill', 'beneficiaries', 'executors', 'codicilDates', 'witnesses',
+                        'ownerName', 'propertyAddress', 'estimatedValue', 'valuationDate', 'landRegistryNumber',
+                        'accountHolder', 'institutionName', 'accountNumber', 'balance', 'statementDate', 'currency', 'accountType',
+                        'taxpayerName', 'taxYear', 'totalTaxDue', 'referenceNumber', 'submissionDate'
+                      ].includes(key)
+                    ).map(([key, value]) => (
+                      <div key={key} className={`flex flex-col space-y-1 ${typeof value === 'string' && value.length > 30 ? 'col-span-2' : ''}`}>
+                        <div className="text-xs text-gray-500">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium truncate max-w-xs">
+                            {Array.isArray(value) ? value.join(', ') : String(value)}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 flex-shrink-0"
+                            onClick={() => copyToClipboard(
+                              Array.isArray(value) ? value.join(', ') : String(value), 
                               key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
                             )}
                           >

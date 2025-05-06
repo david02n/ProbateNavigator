@@ -170,9 +170,11 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
       // Prepare data based on classification
       const itemData = {
         caseId,
+        type: isAsset ? 'bank_account' : 'mortgage', // Default to these types based on financial documents
         name: extractedData.accountType || 'Financial Item',
         description: `From document: ${document.name || document.filename}`,
-        value: extractedData.balance || 0,
+        value: isAsset ? (extractedData.balance || 0) : null,
+        amount: isAsset ? null : (extractedData.balance || 0),
         notes: JSON.stringify(extractedData),
         institution: extractedData.institutionName || 'Unknown',
         accountHolder: extractedData.accountHolder || '',

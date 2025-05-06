@@ -65,7 +65,10 @@ const EstatePage: React.FC = () => {
     isLoading: isLoadingAssets 
   } = useQuery<EstateAsset[]>({
     queryKey: ["/api/assets", activeCaseId],
-    queryFn: activeCaseId ? getQueryFn({ on401: "throw" }) : () => Promise.resolve([]),
+    queryFn: activeCaseId ? (() => fetch(`/api/assets/${activeCaseId}`).then(res => {
+      if (!res.ok) throw new Error('Failed to fetch assets');
+      return res.json();
+    })) : () => Promise.resolve([]),
     enabled: !!activeCaseId,
   });
   
@@ -75,7 +78,10 @@ const EstatePage: React.FC = () => {
     isLoading: isLoadingLiabilities 
   } = useQuery<EstateLiability[]>({
     queryKey: ["/api/liabilities", activeCaseId],
-    queryFn: activeCaseId ? getQueryFn({ on401: "throw" }) : () => Promise.resolve([]),
+    queryFn: activeCaseId ? (() => fetch(`/api/liabilities/${activeCaseId}`).then(res => {
+      if (!res.ok) throw new Error('Failed to fetch liabilities');
+      return res.json();
+    })) : () => Promise.resolve([]),
     enabled: !!activeCaseId,
   });
   

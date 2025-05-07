@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
-import { AssessmentResult, ProbateCase, EstateAsset, Executor, Document } from "@shared/schema";
+import { AssessmentResult, ProbateCase, EstateAsset, EstateLiability, Executor, Document } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import NewHeader from "@/components/layout/NewHeader";
 import Assessment from "@/components/sections/Assessment";
@@ -68,6 +68,16 @@ const NewDashboardPage: React.FC = () => {
     enabled: !!activeCase,
   });
   
+  // Fetch estate liabilities to calculate net estate value
+  const {
+    data: liabilities = [],
+    isLoading: isLoadingLiabilities
+  } = useQuery<EstateLiability[]>({
+    queryKey: ["/api/liabilities", activeCase?.id],
+    queryFn: activeCase ? getQueryFn({ on401: "returnNull" }) : () => Promise.resolve([]),
+    enabled: !!activeCase,
+  });
+  
   // Fetch executors to check if any have been added
   const {
     data: executors = [],
@@ -127,6 +137,14 @@ const NewDashboardPage: React.FC = () => {
   const totalAssets = assets.reduce((sum, asset) => {
     return sum + (asset.value ? parseFloat(asset.value.toString()) : 0);
   }, 0);
+  
+  // Calculate total liabilities
+  const totalLiabilities = liabilities.reduce((sum, liability) => {
+    return sum + (liability.amount ? parseFloat(liability.amount.toString()) : 0);
+  }, 0);
+  
+  // Calculate net estate value (assets - liabilities)
+  const netEstateValue = totalAssets - totalLiabilities;
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -140,7 +158,7 @@ const NewDashboardPage: React.FC = () => {
 
   // Format estate value for display
   const estateValue = activeCase ? 
-    (totalAssets > 0 ? formatCurrency(totalAssets) : "Not yet entered") : 
+    ((assets.length > 0 || liabilities.length > 0) ? formatCurrency(netEstateValue) : "Not yet entered") : 
     "£0";
 
   // Calculate estimated completion date (6 months from now)
@@ -193,7 +211,7 @@ const NewDashboardPage: React.FC = () => {
   }
   
   // Check if any data is still loading
-  const isLoading = isLoadingAssessment || isLoadingCases || isLoadingAssets || 
+  const isLoading = isLoadingAssessment || isLoadingCases || isLoadingAssets || isLoadingLiabilities || 
                    isLoadingExecutors || isLoadingDocuments || createCaseMutation.isPending;
   
   return (

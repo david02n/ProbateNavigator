@@ -1,10 +1,16 @@
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithPopup, browserSessionPersistence, setPersistence } from 'firebase/auth';
 import { apiRequest } from './queryClient';
 import FirebaseApp from './firebase';
 
 // Initialize auth and provider
 const auth = getAuth(FirebaseApp);
 const provider = new GoogleAuthProvider();
+
+// Set persistence to browser session
+setPersistence(auth, browserSessionPersistence)
+  .catch((error) => {
+    console.error("Error setting auth persistence:", error);
+  });
 
 // Custom error subclass
 class GoogleAuthError extends Error {
@@ -15,9 +21,10 @@ class GoogleAuthError extends Error {
 }
 
 /**
- * Initiates the Google sign-in flow, redirecting the user to the Google login page
+ * Initiates the Google sign-in flow, first trying popup and falling back to redirect if necessary
+ * @returns User data if popup authentication succeeded, otherwise null (for redirect)
  */
-export const signInWithGoogle = async (): Promise<void> => {
+export const signInWithGoogle = async () => {
   // Add scopes if needed
   provider.addScope('profile');
   provider.addScope('email');
@@ -27,21 +34,32 @@ export const signInWithGoogle = async (): Promise<void> => {
     prompt: 'select_account'
   });
   
-  await signInWithRedirect(auth, provider);
+  try {
+    // First try with popup, which is more reliable on most browsers
+    console.log('Attempting Google sign-in with popup...');
+    const result = await signInWithPopup(auth, provider);
+    console.log('Popup sign-in successful, user:', result.user.email);
+    
+    // Process the result immediately if popup succeeds
+    return await processAuthResult(result);
+  } catch (error: any) {
+    console.log('Popup sign-in failed, falling back to redirect:', error.message);
+    // Fall back to redirect method
+    await signInWithRedirect(auth, provider);
+    return null; // No immediate result with redirect flow
+  }
 };
 
 /**
- * Handles the redirect result after returning from Google authentication
- * @returns The user object if successful, null if no redirect result
+ * Process authentication result from either popup or redirect
  */
-export const handleRedirectResult = async () => {
+const processAuthResult = async (result: any) => {
+  if (!result) {
+    console.error('No authentication result to process');
+    return null;
+  }
+  
   try {
-    const result = await getRedirectResult(auth);
-    
-    if (!result) {
-      return null; // No redirect result, not coming back from Google auth
-    }
-    
     // Get the user info and ID token
     const user = result.user;
     const idToken = await user.getIdToken();
@@ -49,6 +67,8 @@ export const handleRedirectResult = async () => {
     if (!user.email) {
       throw new GoogleAuthError('No email provided by Google account');
     }
+    
+    console.log('Sending Google auth data to backend...');
     
     // Send the token to our backend to create/authenticate the user
     const response = await apiRequest('POST', '/api/auth/google', {
@@ -63,11 +83,35 @@ export const handleRedirectResult = async () => {
       throw new GoogleAuthError(errorData.message || 'Failed to authenticate with the server');
     }
     
+    console.log('Backend authentication successful');
+    
     // Return the user data from our backend
     return await response.json();
+  } catch (error: any) {
+    console.error('Failed to process auth result:', error);
+    throw new GoogleAuthError(error.message || 'Failed to process authentication');
+  }
+};
+
+/**
+ * Handles the redirect result after returning from Google authentication
+ * @returns The user object if successful, null if no redirect result
+ */
+export const handleRedirectResult = async () => {
+  try {
+    console.log('Checking for redirect result...');
+    const result = await getRedirectResult(auth);
+    
+    if (!result) {
+      console.log('No redirect result found');
+      return null; // No redirect result, not coming back from Google auth
+    }
+    
+    console.log('Redirect result found, processing...');
+    return await processAuthResult(result);
     
   } catch (error: any) {
-    console.error('Google auth error:', error);
+    console.error('Google auth redirect error:', error);
     throw new GoogleAuthError(error.message || 'Authentication failed');
   }
 };
@@ -76,5 +120,10 @@ export const handleRedirectResult = async () => {
  * Signs out the currently signed-in user
  */
 export const signOut = async (): Promise<void> => {
-  await auth.signOut();
+  try {
+    await auth.signOut();
+    console.log('User signed out successfully');
+  } catch (error) {
+    console.error('Error signing out:', error);
+  }
 };

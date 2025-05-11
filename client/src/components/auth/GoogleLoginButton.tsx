@@ -24,17 +24,26 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     const checkRedirect = async () => {
       try {
         setIsLoading(true);
+        console.log('GoogleLoginButton: Checking for redirect result');
         const user = await handleRedirectResult();
+        
         if (user) {
+          console.log('GoogleLoginButton: User authenticated from redirect', user);
           // Update React Query cache with the user
           queryClient.setQueryData(['/api/user'], user);
+          queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+          
           toast({
             title: 'Successfully signed in',
-            description: `Welcome${user.displayName ? ` ${user.displayName}` : ''}!`,
+            description: user.firstName 
+              ? `Welcome ${user.firstName}!` 
+              : 'Welcome to ProbateSwift!',
           });
+        } else {
+          console.log('GoogleLoginButton: No redirect result found');
         }
       } catch (error: any) {
-        console.error('Google redirect error:', error);
+        console.error('GoogleLoginButton: Redirect error:', error);
         toast({
           title: 'Sign-in failed',
           description: error.message || 'An error occurred during sign in',
@@ -51,12 +60,26 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
-      console.log('Starting Google sign-in process...');
-      await signInWithGoogle();
-      // The redirect result handler will take care of updating the state
-      // We won't reach here because of the redirect
+      console.log('GoogleLoginButton: Starting Google sign-in process');
+      
+      const result = await signInWithGoogle();
+      // For popup flow, we might get a result directly
+      if (result) {
+        console.log('GoogleLoginButton: Popup auth successful');
+        queryClient.setQueryData(['/api/user'], result);
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+        
+        toast({
+          title: 'Successfully signed in',
+          description: result.firstName 
+            ? `Welcome ${result.firstName}!` 
+            : 'Welcome to ProbateSwift!',
+        });
+      }
+      
+      // For redirect flow, the redirect handler will take care of it
     } catch (error: any) {
-      console.error('Google sign-in error:', error);
+      console.error('GoogleLoginButton: Sign-in error:', error);
       toast({
         title: 'Sign-in failed',
         description: error.message || 'An error occurred during sign in',

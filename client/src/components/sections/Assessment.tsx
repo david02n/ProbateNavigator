@@ -236,15 +236,17 @@ export const Assessment: React.FC<AssessmentProps> = ({ isOpen, onClose }) => {
                 
                 {/* Question */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold flex items-center">
-                    <span className="bg-blue-500 text-white rounded-full h-6 w-6 inline-flex items-center justify-center mr-2">
+                  <h3 className="text-lg font-semibold flex items-start">
+                    <span className="bg-primary text-white rounded-full h-8 w-8 min-w-8 flex-shrink-0 inline-flex items-center justify-center mr-3 text-xs mt-0.5">
                       {currentQuestion.id}
                     </span>
-                    {currentQuestion.question}
+                    <div>
+                      {currentQuestion.question}
+                      <p className="text-gray-600 text-sm mt-1 font-normal">
+                        {currentQuestion.description}
+                      </p>
+                    </div>
                   </h3>
-                  <p className="text-gray-600 text-sm mt-1">
-                    {currentQuestion.description}
-                  </p>
                 </div>
                 
                 {/* Options */}

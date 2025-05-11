@@ -23,6 +23,17 @@ const Hero: React.FC = () => {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 tracking-tight">
             Navigate probate with ease<span className="text-primary">—precise, swift support when it matters most</span>
           </h1>
+          
+          {/* Logo between h1 and p */}
+          <div className="flex justify-center mb-6">
+            <img 
+              src={logoBirdImage}
+              alt="ProbateSwift Logo" 
+              className="w-[200px] h-auto"
+              style={{ filter: 'brightness(1.1) contrast(1.1)' }}
+            />
+          </div>
+          
           <p className="text-xl md:text-2xl text-charcoal/80 mb-10 max-w-3xl">
             ProbateSwift guides you step by step, cutting weeks off the timeline, easing stress, and reducing costs.
           </p>
@@ -61,16 +72,6 @@ const Hero: React.FC = () => {
           </div>
           
           <p className="text-sm text-charcoal/60 -mt-8 mb-8 hidden sm:block">No credit card required</p>
-          
-          {/* Logo at the bottom */}
-          <div className="flex justify-center mt-12 mb-4">
-            <img 
-              src={logoBirdImage}
-              alt="ProbateSwift Logo" 
-              className="w-[200px] h-auto"
-              style={{ filter: 'brightness(1.1) contrast(1.1)' }}
-            />
-          </div>
         </div>
       </div>
     </section>

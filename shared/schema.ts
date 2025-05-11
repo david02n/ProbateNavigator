@@ -157,10 +157,14 @@ export const insertUserSchema = createInsertSchema(users)
     firstName: true,
     lastName: true,
     isGuest: true,
+    firebaseUid: true,
+    photoURL: true,
   })
   .extend({
     email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters").optional(),
+    firebaseUid: z.string().optional(),
+    photoURL: z.string().optional(),
   });
 
 export const insertAssessmentResultSchema = createInsertSchema(assessmentResults)

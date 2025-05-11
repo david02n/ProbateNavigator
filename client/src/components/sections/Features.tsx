@@ -1,4 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
+import { 
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { 
   Compass, 
   ClipboardList, 
@@ -38,6 +45,8 @@ const Feature: React.FC<FeatureProps> = ({ icon, title, description }) => {
 };
 
 const Features: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  
   const features = [
     {
       icon: <Compass className="h-5 w-5" />,
@@ -104,23 +113,38 @@ const Features: React.FC = () => {
   return (
     <section id="features" className="py-16 bg-white">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold font-inter mb-4">Comprehensive Features</h2>
-          <p className="text-lg text-charcoal/80 max-w-2xl mx-auto">
-            Our intelligent platform simplifies every aspect of the probate process
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-          {features.map((feature, index) => (
-            <Feature
-              key={index}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
-            />
-          ))}
-        </div>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold font-inter mb-4">Featured Capabilities</h2>
+            <p className="text-lg text-charcoal/80 max-w-2xl mx-auto mb-6">
+              Our intelligent platform simplifies every aspect of the probate process
+            </p>
+            
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary/5 rounded-full px-6 py-2 mt-2">
+                View all Features
+                {isOpen ? (
+                  <ChevronUp className="ml-2 h-4 w-4" />
+                ) : (
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+            
+          <CollapsibleContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 mt-10">
+              {features.map((feature, index) => (
+                <Feature
+                  key={index}
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </section>
   );

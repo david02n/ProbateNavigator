@@ -72,22 +72,7 @@ const Hero: React.FC = () => {
               </Button>
             </a>
           </div>
-          <div className="mt-8 flex items-center">
-            <div className="flex -space-x-2" aria-label="User testimonials">
-              <div className="w-8 h-8 rounded-full bg-lavender flex items-center justify-center text-white text-xs" aria-label="User JD">JD</div>
-              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs" aria-label="User SM">SM</div>
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs" aria-label="User KL">KL</div>
-            </div>
-            <div className="ml-4">
-              <div className="flex items-center" aria-label="5 star rating">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-amber text-amber" aria-hidden="true" />
-                ))}
-                <span className="sr-only">5 out of 5 stars</span>
-              </div>
-              <p className="text-sm text-charcoal/70">Trusted by 10,000+ families</p>
-            </div>
-          </div>
+{/* Testimonials hidden as requested */}
         </div>
         
         <div className="md:w-1/2">

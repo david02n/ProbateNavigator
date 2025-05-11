@@ -2,6 +2,7 @@ import React from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/sections/Hero";
+import KeyFeatures from "@/components/sections/KeyFeatures";
 import Benefits from "@/components/sections/Benefits";
 import HowItWorks from "@/components/sections/HowItWorks";
 import Features from "@/components/sections/Features";
@@ -17,6 +18,7 @@ const Home: React.FC = () => {
       <Header />
       <main className="flex-grow pt-24 md:pt-28">
         <Hero />
+        <KeyFeatures />
         <Benefits />
         <HowItWorks />
         <Features />

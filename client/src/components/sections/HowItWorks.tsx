@@ -40,75 +40,76 @@ const ProcessStep: React.FC<ProcessStepProps> = ({ number, title, description, c
 
 const HowItWorks: React.FC = () => {
   return (
-    <section id="how-it-works" className="py-16 bg-muted">
+    <section id="how-it-works" className="py-20 bg-white relative">
+      {/* Background gradient */}
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-muted to-white opacity-70 -z-10"></div>
+      
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold font-inter mb-4">The ProbateSwift Process</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
           <p className="text-lg text-charcoal/80 max-w-2xl mx-auto">
-            Our intelligent platform guides you through probate with document automation
+            Three simple steps to complete your probate application
           </p>
         </div>
         
         <div className="max-w-4xl mx-auto">
           <ProcessStep 
             number={1} 
-            title="Initial Assessment" 
-            description="Answer simple questions to determine if probate is needed for your specific situation."
+            title="Upload your documents" 
+            description="Collect death certificates, bank statements and property deeds on any device."
           >
-            <Card className="bg-muted p-4">
-              <CardContent className="p-0 text-sm">
-                <div className="flex items-center mb-2">
-                  <HelpCircle className="text-primary mr-2 h-4 w-4" />
-                  <span className="font-medium">Was there a valid will?</span>
+            <div className="space-y-3">
+              <div className="flex items-center p-3 rounded-lg bg-white shadow-sm">
+                <Upload className="text-primary mr-3 h-5 w-5" />
+                <div>
+                  <p className="text-sm font-medium">Easy document upload</p>
+                  <p className="text-xs text-charcoal/70">Upload photos or scan documents right from your phone</p>
                 </div>
-                <div className="flex items-center mb-2">
-                  <HelpCircle className="text-primary mr-2 h-4 w-4" />
-                  <span className="font-medium">Is there property in the deceased's sole name?</span>
+              </div>
+              <div className="flex items-center p-3 rounded-lg bg-white shadow-sm">
+                <BrainCircuit className="text-primary mr-3 h-5 w-5" />
+                <div>
+                  <p className="text-sm font-medium">Automatic information extraction</p>
+                  <p className="text-xs text-charcoal/70">Our system identifies and extracts all relevant data</p>
                 </div>
-                <div className="flex items-center mb-2">
-                  <HelpCircle className="text-primary mr-2 h-4 w-4" />
-                  <span className="font-medium">Are there financial assets worth more than £5,000?</span>
+              </div>
+              <div className="flex items-center p-3 rounded-lg bg-white shadow-sm">
+                <CheckCircle className="text-success mr-3 h-5 w-5" />
+                <div>
+                  <p className="text-sm font-medium">Instant processing</p>
+                  <p className="text-xs text-charcoal/70">Most documents are processed in under 60 seconds</p>
                 </div>
-                <div className="flex justify-center mt-4">
-                  <div className="rounded-lg bg-white px-3 py-1 text-xs border border-lavender/20">
-                    <span className="text-success font-medium">✓</span> Instant result: Probate required/not required
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </ProcessStep>
           
           <ProcessStep 
             number={2} 
-            title="Document Upload & Smart Extraction" 
-            description="Upload key documents once and our AI will automatically extract and classify the information."
+            title="Review auto-filled forms" 
+            description="We pull every required detail into the right fields. You confirm it's accurate."
           >
-            <div className="space-y-3">
-              <div className="flex items-center p-3 rounded-lg bg-muted">
-                <Upload className="text-primary mr-3 h-5 w-5" />
+            <div className="space-y-4">
+              <div className="flex items-start bg-white p-3 rounded-lg shadow-sm">
+                <FileText className="text-primary mt-1 mr-3 h-5 w-5" />
                 <div>
-                  <p className="text-sm font-medium">Upload Death Certificate</p>
-                  <p className="text-xs text-charcoal/70">Our system extracts name, date, cause of death</p>
+                  <p className="text-sm font-medium">Forms automatically populated</p>
+                  <p className="text-xs text-charcoal/70">The PA1 probate application form and IHT forms are filled out using data from your documents</p>
                 </div>
               </div>
-              <div className="flex items-center p-3 rounded-lg bg-muted">
-                <Upload className="text-primary mr-3 h-5 w-5" />
+              
+              <div className="flex items-start bg-white p-3 rounded-lg shadow-sm">
+                <Clipboard className="text-primary mt-1 mr-3 h-5 w-5" />
                 <div>
-                  <p className="text-sm font-medium">Upload Bank Statements</p>
-                  <p className="text-xs text-charcoal/70">Auto-classified as assets, extracted balance and account details</p>
+                  <p className="text-sm font-medium">Easy verification process</p>
+                  <p className="text-xs text-charcoal/70">Review each section, approve or adjust as needed</p>
                 </div>
               </div>
-              <div className="flex items-center p-3 rounded-lg bg-muted">
-                <Upload className="text-primary mr-3 h-5 w-5" />
+              
+              <div className="flex items-start bg-white p-3 rounded-lg shadow-sm">
+                <Calculator className="text-primary mt-1 mr-3 h-5 w-5" />
                 <div>
-                  <p className="text-sm font-medium">Upload Property Documents</p>
-                  <p className="text-xs text-charcoal/70">Extract address, value, and ownership details</p>
-                </div>
-              </div>
-              <div className="flex justify-center mt-2">
-                <div className="flex items-center text-xs text-primary">
-                  <BrainCircuit className="h-3 w-3 mr-1" />
-                  <span>AI processes documents in seconds</span>
+                  <p className="text-sm font-medium">Estate valuation calculated</p>
+                  <p className="text-xs text-charcoal/70">Total assets and liabilities calculated for inheritance tax purposes</p>
                 </div>
               </div>
             </div>
@@ -116,105 +117,44 @@ const HowItWorks: React.FC = () => {
           
           <ProcessStep 
             number={3} 
-            title="Executor & Estate Management" 
-            description="Manage multiple executors, track assets and liabilities with real-time valuation."
-          >
-            <div className="space-y-4">
-              <div className="flex items-start bg-muted p-3 rounded-lg">
-                <Users className="text-primary mt-1 mr-3 h-5 w-5" />
-                <div>
-                  <p className="text-sm font-medium">Executor Management</p>
-                  <p className="text-xs text-charcoal/70">Add multiple executors with contact details and roles</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col bg-muted p-3 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <FileText className="text-success h-4 w-4 mr-2" />
-                    <p className="text-sm font-medium">Assets</p>
-                  </div>
-                  <ul className="text-xs space-y-1 ml-6 list-disc">
-                    <li>Bank accounts</li>
-                    <li>Properties</li>
-                    <li>Investments</li>
-                    <li>Vehicles</li>
-                  </ul>
-                </div>
-                <div className="flex flex-col bg-muted p-3 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <FileText className="text-error h-4 w-4 mr-2" />
-                    <p className="text-sm font-medium">Liabilities</p>
-                  </div>
-                  <ul className="text-xs space-y-1 ml-6 list-disc">
-                    <li>Mortgages</li>
-                    <li>Loans</li>
-                    <li>Credit cards</li>
-                    <li>Utility bills</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="flex justify-center items-center">
-                <Calculator className="text-primary h-4 w-4 mr-2" />
-                <span className="text-sm">Real-time estate value: <span className="font-bold">£285,750</span></span>
-              </div>
-            </div>
-          </ProcessStep>
-          
-          <ProcessStep 
-            number={4} 
-            title="Application Preparation & Submission" 
-            description="Generate complete application forms with information extracted from your documents."
+            title="Submit—and pay" 
+            description="Kick off the government process today. Only then is the £297 fee due."
           >
             <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
-                <Clipboard className="text-primary h-5 w-5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Pre-filled PA1 Form</p>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
-                    <div className="bg-success h-1.5 rounded-full" style={{ width: '75%' }}></div>
-                  </div>
+              <div className="flex items-center p-3 rounded-lg bg-white shadow-sm">
+                <CheckCircle className="text-success mr-3 h-5 w-5" />
+                <div>
+                  <p className="text-sm font-medium">Digital submission</p>
+                  <p className="text-xs text-charcoal/70">Submit your application directly to HMRC and the Probate Registry</p>
                 </div>
-                <div className="text-xs font-medium">75%</div>
               </div>
               
-              <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
-                <Clipboard className="text-primary h-5 w-5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">IHT205 Documentation</p>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
-                    <div className="bg-success h-1.5 rounded-full" style={{ width: '60%' }}></div>
-                  </div>
+              <div className="flex items-center p-3 rounded-lg bg-white shadow-sm">
+                <Clock className="text-primary mr-3 h-5 w-5" />
+                <div>
+                  <p className="text-sm font-medium">Pay only when you submit</p>
+                  <p className="text-xs text-charcoal/70">Use the full service for free—pay £297 only when you're ready to submit</p>
                 </div>
-                <div className="text-xs font-medium">60%</div>
               </div>
               
-              <div className="flex items-center justify-between bg-muted p-3 rounded-lg text-sm mt-4">
+              <div className="flex justify-center mt-4 p-3 bg-success/10 rounded-lg">
                 <div className="flex items-center">
-                  <CheckCircle className="text-success mr-2 h-4 w-4" />
-                  <span>Documents</span>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="text-amber mr-2 h-4 w-4" />
-                  <span>Application</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="h-4 w-4 rounded-full bg-mid-grey mr-2"></div>
-                  <span>Distribution</span>
+                  <CheckCircle className="text-success h-5 w-5 mr-2" />
+                  <span className="text-sm font-medium">No payment required if you change your mind</span>
                 </div>
               </div>
             </div>
           </ProcessStep>
         </div>
         
-        <div className="mt-12 text-center">
+        <div className="mt-16 text-center">
           <a href="/auth">
-            <Button className="bg-primary text-white hover:bg-primary/90">
-              <span>Begin Your Probate Journey</span>
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button size="lg" className="bg-primary text-white hover:bg-primary/90 rounded-full shadow-md px-8 py-6 text-lg">
+              <span>Start for Free</span>
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </a>
+          <p className="text-sm text-charcoal/60 mt-2">No credit card required</p>
         </div>
       </div>
     </section>

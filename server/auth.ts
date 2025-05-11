@@ -86,6 +86,8 @@ export function setupAuth(app: Express) {
     cookie: {
       secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      sameSite: 'lax', // Allow cross-site cookies for authentication
+      domain: process.env.NODE_ENV === "production" ? '.probateswift.com' : undefined,
     }
   };
 

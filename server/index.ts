@@ -1,8 +1,29 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Configure CORS for cross-domain requests
+const corsOptions = {
+  origin: [
+    // Local development domains
+    /localhost:\d+$/,
+    /127\.0\.0\.1:\d+$/,
+    // Replit domains
+    /\.replit\.dev$/,
+    /\.us-east-1\.csb\.app$/,
+    // Production domains
+    /\.probateswift\.com$/,
+    'https://probateswift.com'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

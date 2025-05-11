@@ -18,6 +18,10 @@ export const SwiftLogo: React.FC<SwiftLogoProps> = ({
       <img 
         src={logoPath} 
         alt="ProbateSwift" 
+        loading="eager" // Logo should load immediately as it's essential
+        width="40"
+        height="40"
+        fetchPriority="high"
         style={{ 
           height: `${size}px`,
           width: 'auto',
@@ -37,6 +41,10 @@ export const SwiftLogoWithText: React.FC<SwiftLogoProps & { height?: number }> =
       <img 
         src={logoPath} 
         alt="ProbateSwift" 
+        loading="eager" // Logo should load immediately as it's essential
+        width={height * 3} // Approximating the aspect ratio
+        height={height}
+        fetchPriority="high"
         style={{ 
           height: `${height}px`,
           width: 'auto',

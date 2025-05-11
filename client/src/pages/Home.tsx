@@ -20,7 +20,7 @@ const Home: React.FC = () => {
         <HowItWorks />
         <Features />
         <AssessmentPreview />
-        <Testimonials />
+        {/* Testimonials temporarily hidden */}
         <FAQ />
         <CTA />
       </main>

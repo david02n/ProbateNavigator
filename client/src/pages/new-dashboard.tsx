@@ -160,7 +160,7 @@ const NewDashboardPage: React.FC = () => {
 
   // Format estate value for display
   const estateValue = activeCase ? 
-    ((assets.length > 0 || liabilities.length > 0) ? formatCurrency(netEstateValue) : "Not yet entered") : 
+    (formatCurrency(netEstateValue)) : 
     "£0";
 
   // Calculate estimated completion date (6 months from now)

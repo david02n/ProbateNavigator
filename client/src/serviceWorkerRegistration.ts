@@ -11,8 +11,8 @@ export function registerServiceWorker() {
           console.error('Service Worker registration failed:', error);
         });
     });
-  } else {
-    // In development, unregister any existing service workers to prevent caching issues
+  } else if (import.meta.env.MODE === 'development') {
+    // Only in development mode, unregister any existing service workers
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(registrations => {
         for (let registration of registrations) {

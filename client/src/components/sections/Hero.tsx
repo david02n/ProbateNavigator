@@ -4,6 +4,7 @@ import { ArrowRight, PlayCircle, Upload, FileText, CheckCircle, BrainCircuit, Ch
 import { Card } from "@/components/ui/card";
 import { SwiftLogoWithText } from "@/components/ui/SwiftLogo";
 import Assessment from "@/components/sections/Assessment";
+import logoBirdImage from "@assets/logo_lite.png";
 
 const Hero: React.FC = () => {
   const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
@@ -64,7 +65,7 @@ const Hero: React.FC = () => {
           {/* Logo at the bottom */}
           <div className="flex justify-center mt-8">
             <img 
-              src="/assets/logo_lite.png" 
+              src={logoBirdImage}
               alt="ProbateSwift Logo" 
               className="w-16 h-16 opacity-80"
             />

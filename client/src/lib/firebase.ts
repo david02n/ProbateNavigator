@@ -27,6 +27,11 @@ const validateFirebaseConfig = () => {
     return false;
   }
   
+  // Log current domain for debugging
+  console.log('Current domain:', window.location.hostname);
+  console.log('Full host:', window.location.host);
+  console.log('Full URL:', window.location.href);
+  
   return true;
 };
 

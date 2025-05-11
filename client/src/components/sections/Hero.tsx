@@ -1,14 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, PlayCircle, Upload, FileText, CheckCircle, BrainCircuit, ChevronRight } from "lucide-react";
+import { ArrowRight, PlayCircle, Upload, FileText, CheckCircle, BrainCircuit, ChevronRight, HelpCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SwiftLogoWithText } from "@/components/ui/SwiftLogo";
+import Assessment from "@/components/sections/Assessment";
 
 const Hero: React.FC = () => {
+  const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
+
   return (
     <section className="py-20 md:py-28 bg-white relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-cream to-white opacity-70 -z-10"></div>
+      
+      {/* Assessment Modal */}
+      <Assessment isOpen={isAssessmentOpen} onClose={() => setIsAssessmentOpen(false)} />
       
       <div className="container mx-auto px-4">
         {/* Main content row */}
@@ -20,7 +26,7 @@ const Hero: React.FC = () => {
             ProbateSwift guides you step by step, cutting weeks off the timeline, easing stress, and reducing costs.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 mb-12">
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <a href="#assessment" aria-label="Start your probate assessment">
               <Button size="lg" className="bg-primary text-white hover:bg-primary/90 rounded-full shadow-md px-8 py-6 text-lg">
                 <span>Start for Free</span>
@@ -36,7 +42,18 @@ const Hero: React.FC = () => {
               </a>
             </div>
           </div>
-          <p className="text-sm text-charcoal/60 -mt-8 mb-4 hidden sm:block">No credit card required</p>
+          
+          {/* Check if you need probate button */}
+          <Button 
+            variant="link" 
+            className="text-primary hover:text-primary/80 mb-6 flex items-center gap-2"
+            onClick={() => setIsAssessmentOpen(true)}
+          >
+            <HelpCircle className="h-4 w-4" />
+            <span>Check if you need probate</span>
+          </Button>
+          
+          <p className="text-sm text-charcoal/60 mb-4">No credit card required</p>
         </div>
         
         {/* Feature highlights */}

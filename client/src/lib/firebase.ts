@@ -1,9 +1,27 @@
 import { initializeApp } from 'firebase/app';
 
+// Determine the appropriate authDomain based on the current environment
+const getAuthDomain = () => {
+  const currentHost = window.location.hostname;
+  
+  // Check if we're on the probateswift.com domain
+  if (currentHost.includes('probateswift.com')) {
+    return 'probateswift.com';
+  }
+  
+  // Check if we're on the replit.app domain
+  if (currentHost.includes('replit.app')) {
+    return currentHost; // Use the full replit.app hostname
+  }
+  
+  // Default for development environment - use Firebase default
+  return `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`;
+};
+
 // Firebase configuration using environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  authDomain: getAuthDomain(),
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,

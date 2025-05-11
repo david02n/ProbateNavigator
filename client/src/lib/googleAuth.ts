@@ -21,6 +21,18 @@ class GoogleAuthError extends Error {
 }
 
 /**
+ * Get the correct return URL based on the current environment
+ * This is crucial for Firebase auth to work correctly across domains
+ */
+const getReturnUrl = (): string => {
+  const origin = window.location.origin;
+  const hostname = window.location.hostname;
+  
+  // Add state parameter to help identify return from auth
+  return `${origin}/auth?authReturn=true`;
+};
+
+/**
  * Initiates the Google sign-in flow, first trying popup and falling back to redirect if necessary
  * @returns User data if popup authentication succeeded, otherwise null (for redirect)
  */
@@ -29,14 +41,18 @@ export const signInWithGoogle = async () => {
   provider.addScope('profile');
   provider.addScope('email');
   
-  // Determine the current origin for redirect
-  const origin = window.location.origin;
+  // Log environment info for debugging
+  console.log('Environment info for debugging:');
+  console.log('- URL:', window.location.href);
+  console.log('- Origin:', window.location.origin);
+  console.log('- Hostname:', window.location.hostname);
+  console.log('- Firebase authDomain:', auth.app.options.authDomain);
   
   // Set custom parameters
   provider.setCustomParameters({
     prompt: 'select_account',
-    // Ensure the return URL is on the same domain
-    redirect_uri: `${origin}/auth`
+    // Ensure the return URL uses the proper domain
+    redirect_uri: getReturnUrl()
   });
   
   try {
@@ -48,10 +64,26 @@ export const signInWithGoogle = async () => {
     // Process the result immediately if popup succeeds
     return await processAuthResult(result);
   } catch (error: any) {
-    console.log('Popup sign-in failed, falling back to redirect:', error.message);
-    // Fall back to redirect method
-    await signInWithRedirect(auth, provider);
-    return null; // No immediate result with redirect flow
+    // Special handling for mobile or cross-domain issues
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    
+    console.log(`Popup sign-in failed (${errorCode}), falling back to redirect:`, errorMessage);
+    
+    // Check if we had a cross-origin error that suggests we should use redirect
+    if (errorCode === 'auth/popup-blocked' || 
+        errorCode === 'auth/popup-closed-by-user' ||
+        errorCode === 'auth/internal-error' ||
+        errorMessage.includes('cross-origin')) {
+      console.log('Redirecting for authentication due to popup issues...');
+      
+      // Some browsers/devices work better with redirect
+      await signInWithRedirect(auth, provider);
+      return null; // No immediate result with redirect flow
+    }
+    
+    // For other errors, throw them to be handled by the calling component
+    throw new GoogleAuthError(`Sign-in failed: ${errorMessage || 'Unknown error'}`);
   }
 };
 
@@ -75,19 +107,13 @@ const processAuthResult = async (result: any) => {
     
     console.log('Sending Google auth data to backend...');
     
-    // Get the current origin for checking if we need to prepend a base URL
+    // Log debugging info
     const currentOrigin = window.location.origin;
-    const isProbateSwiftApp = currentOrigin.includes('probateswift');
-    
-    // Determine the API URL - may need absolute URL for cross-domain scenarios in production
-    const apiUrl = isProbateSwiftApp && currentOrigin.includes('replit.app') 
-      ? '/api/auth/google'  // Use relative URL for normal cases 
-      : '/api/auth/google';
-      
-    console.log('Using API URL:', apiUrl);
+    const hostname = window.location.hostname;
+    console.log(`Processing auth on domain: ${hostname} (${currentOrigin})`);
     
     // Send the token to our backend to create/authenticate the user
-    const response = await apiRequest('POST', apiUrl, {
+    const response = await apiRequest('POST', '/api/auth/google', {
       idToken,
       email: user.email,
       displayName: user.displayName,
@@ -95,8 +121,19 @@ const processAuthResult = async (result: any) => {
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new GoogleAuthError(errorData.message || 'Failed to authenticate with the server');
+      const errorText = await response.text();
+      let errorMessage;
+      
+      try {
+        // Try to parse as JSON
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.message || 'Server authentication failed';
+      } catch(e) {
+        // If not valid JSON, use the text directly
+        errorMessage = errorText || `Failed to authenticate (${response.status})`;
+      }
+      
+      throw new GoogleAuthError(errorMessage);
     }
     
     console.log('Backend authentication successful');
@@ -127,8 +164,19 @@ export const handleRedirectResult = async () => {
     return await processAuthResult(result);
     
   } catch (error: any) {
-    console.error('Google auth redirect error:', error);
-    throw new GoogleAuthError(error.message || 'Authentication failed');
+    // Special handling for error codes
+    const errorCode = typeof error.code === 'string' ? error.code : 'unknown';
+    const errorMessage = error.message || 'Authentication redirect failed';
+    
+    console.error(`Google auth redirect error [${errorCode}]:`, errorMessage);
+    
+    if (errorCode === 'auth/credential-already-in-use') {
+      throw new GoogleAuthError('This Google account is already linked to another user');
+    } else if (errorCode === 'auth/account-exists-with-different-credential') {
+      throw new GoogleAuthError('An account already exists with the same email but different sign-in credentials');
+    } else {
+      throw new GoogleAuthError(`Authentication failed: ${errorMessage}`);
+    }
   }
 };
 

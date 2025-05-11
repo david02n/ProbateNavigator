@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { signInWithGoogle, handleRedirectResult } from '@/lib/googleAuth';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
+import { useLocation } from 'wouter';
 
 interface GoogleLoginButtonProps {
   variant?: 'default' | 'outline' | 'ghost';
@@ -17,13 +18,25 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   iconOnly = false
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // Handle Google redirect result on component mount
   useEffect(() => {
     const checkRedirect = async () => {
       try {
+        // Check if there's a URL parameter that indicates we're returning from an auth flow
+        const urlParams = new URLSearchParams(window.location.search);
+        const isAuthReturn = urlParams.has('state') || urlParams.has('code') || urlParams.has('authReturn');
+        
+        if (!isAuthReturn) {
+          console.log('GoogleLoginButton: Not returning from auth redirect, skipping check');
+          return;
+        }
+        
         setIsLoading(true);
+        setAuthError(null);
         console.log('GoogleLoginButton: Checking for redirect result');
         const user = await handleRedirectResult();
         
@@ -39,11 +52,21 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
               ? `Welcome ${user.firstName}!` 
               : 'Welcome to ProbateSwift!',
           });
+          
+          // Clear auth parameters from URL
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+          
+          // Redirect to dashboard if on auth page
+          if (window.location.pathname === '/auth') {
+            setLocation('/');
+          }
         } else {
           console.log('GoogleLoginButton: No redirect result found');
         }
       } catch (error: any) {
         console.error('GoogleLoginButton: Redirect error:', error);
+        setAuthError(error.message || 'Authentication failed');
         toast({
           title: 'Sign-in failed',
           description: error.message || 'An error occurred during sign in',
@@ -55,12 +78,17 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     };
 
     checkRedirect();
-  }, [toast]);
+  }, [toast, setLocation]);
 
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
+      setAuthError(null);
       console.log('GoogleLoginButton: Starting Google sign-in process');
+      
+      // Get current domain for debugging
+      const domain = window.location.hostname;
+      console.log(`GoogleLoginButton: Authenticating on domain: ${domain}`);
       
       const result = await signInWithGoogle();
       // For popup flow, we might get a result directly
@@ -77,24 +105,63 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
             : 'Welcome to ProbateSwift!',
         });
         
-        // For cross-domain issues, a full page redirect is the most reliable
-        if (window.location.pathname !== '/') {
-          console.log('Redirecting to dashboard after successful login');
-          window.location.href = '/';
+        // Navigate to dashboard if on auth page
+        if (window.location.pathname === '/auth') {
+          setLocation('/');
         }
+      } else {
+        // If result is null, we're using redirect flow - add a parameter to indicate auth return
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('authReturn', 'true');
+        window.history.replaceState({}, document.title, currentUrl.toString());
+        
+        // Display toast that we're redirecting
+        toast({
+          title: 'Redirecting to Google',
+          description: 'Please complete authentication with Google',
+        });
       }
       
       // For redirect flow, the redirect handler will take care of it
     } catch (error: any) {
       console.error('GoogleLoginButton: Sign-in error:', error);
+      setAuthError(error.message || 'Authentication failed');
       toast({
         title: 'Sign-in failed',
         description: error.message || 'An error occurred during sign in',
         variant: 'destructive',
       });
+    } finally {
       setIsLoading(false);
     }
   };
+
+  // Function to try again if there was an error
+  const handleRetry = () => {
+    setAuthError(null);
+    handleGoogleLogin();
+  };
+
+  // If there was an auth error, show a retry button
+  if (authError) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="text-sm text-red-500 flex items-center gap-1 mb-1">
+          <AlertCircle className="h-4 w-4" />
+          <span>Sign-in failed: {authError}</span>
+        </div>
+        <Button
+          type="button"
+          variant="destructive"
+          className={className}
+          onClick={handleRetry}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <Button

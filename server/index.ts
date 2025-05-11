@@ -7,25 +7,79 @@ const app = express();
 
 // Configure CORS for cross-domain requests
 const corsOptions = {
-  origin: [
-    // Local development domains
-    /localhost:\d+$/,
-    /127\.0\.0\.1:\d+$/,
-    // Replit domains
-    /\.replit\.dev$/,
-    /\.replit\.app$/,
-    /\.us-east-1\.csb\.app$/,
-    // Production domains
-    /\.probateswift\.com$/,
-    'https://probateswift.com',
-    'https://probateswift.replit.app'
-  ],
+  // More permissive origin handling for better cross-domain support
+  origin: function(origin: any, callback: any) {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) {
+      log('CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    // Log the origin for debugging purposes
+    log(`CORS: Request from origin: ${origin}`);
+    
+    // Check against our allowed origins
+    const allowedOrigins = [
+      // Local development domains
+      /localhost:\d+$/,
+      /127\.0\.0\.1:\d+$/,
+      // Replit domains - be more permissive for replit subdomains
+      /\.replit\.dev$/,
+      /\.replit\.app$/,
+      /\.us-east-1\.csb\.app$/,
+      // Production domains
+      /\.probateswift\.com$/,
+      'https://probateswift.com',
+      'https://www.probateswift.com',
+      'https://probateswift.replit.app'
+    ];
+    
+    // Check the origin against our allowed patterns
+    let allowed = false;
+    for (const allowedOrigin of allowedOrigins) {
+      if (typeof allowedOrigin === 'string' && origin === allowedOrigin) {
+        allowed = true;
+        break;
+      } else if (allowedOrigin instanceof RegExp && allowedOrigin.test(origin)) {
+        allowed = true;
+        break;
+      }
+    }
+    
+    // Allow all replit.app domains for development
+    if (origin.includes('replit.app')) {
+      log('CORS: Allowing replit.app domain');
+      allowed = true;
+    }
+    
+    if (allowed) {
+      log(`CORS: Origin ${origin} is allowed`);
+      callback(null, true);
+    } else {
+      log(`CORS: Origin ${origin} is not allowed`);
+      // Still allow but warn
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+  maxAge: 86400 // Cache preflight requests for 24 hours
 };
 
 app.use(cors(corsOptions));
+
+// Add additional headers for better cross-domain support
+app.use((req, res, next) => {
+  // Extract hostname for dynamic cookie domain setting
+  const host = req.headers.host || '';
+  log(`Request host: ${host}`);
+  
+  // Set the Vary header to tell proxies to cache by Origin
+  res.setHeader('Vary', 'Origin');
+  
+  next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

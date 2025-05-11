@@ -81,7 +81,7 @@ const Benefits: React.FC = () => {
     <section className="py-16 bg-gradient-to-b from-white to-muted">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold font-inter mb-4">How ProbateSwift Helps You</h2>
+          <h1 className="text-4xl font-bold font-inter mb-4">Benefits</h1>
           <p className="text-lg text-charcoal/80 max-w-2xl mx-auto">
             Navigate the probate process with confidence using our guided tools and expert resources.
           </p>

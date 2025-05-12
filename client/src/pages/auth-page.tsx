@@ -59,24 +59,33 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 // Define props for AuthPage for better TypeScript support
 interface AuthPageProps {
   tab?: string;
+  mobile?: boolean;
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("login");
   const [location] = useLocation();
+  const [isMobile, setIsMobile] = useState(false);
   
-  // Initialize tab from URL parameters or props
+  // Initialize tab from URL parameters or props and detect mobile mode
   useEffect(() => {
     // Get tab from URL if present
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
+    const mobileParam = searchParams.get('mobile');
+    
+    // Check mobile status from different sources
+    const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsMobile(isMobileDevice || mobileParam === 'true');
     
     // Log for debugging
     console.log('Auth page initialized');
     console.log('URL location:', location);
     console.log('Tab from props:', tab);
     console.log('Tab from URL:', tabParam);
+    console.log('Mobile detection:', isMobileDevice);
+    console.log('Mobile from URL param:', mobileParam);
     
     // Set tab based on available data
     if (tabParam === 'register' || tabParam === 'login') {
@@ -88,10 +97,25 @@ const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
     }
     
     // Handle hash fragments (common in mobile browsers)
-    if (window.location.hash && window.location.hash.includes('tab=')) {
-      const hashTab = window.location.hash.includes('tab=register') ? 'register' : 'login';
-      console.log('Setting tab from hash:', hashTab);
-      setActiveTab(hashTab);
+    if (window.location.hash) {
+      if (window.location.hash.includes('tab=')) {
+        const hashTab = window.location.hash.includes('tab=register') ? 'register' : 'login';
+        console.log('Setting tab from hash:', hashTab);
+        setActiveTab(hashTab);
+      }
+      if (window.location.hash.includes('mobile=true')) {
+        console.log('Mobile mode from hash detected');
+        setIsMobile(true);
+      }
+    }
+    
+    // Add meta tags for better mobile handling
+    if (isMobileDevice) {
+      // For very old browsers
+      const viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (viewportMeta) {
+        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
+      }
     }
   }, [tab, location]);
   

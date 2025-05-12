@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SwiftLogo, SwiftLogoWithText } from "@/components/ui/SwiftLogo";
-import { Menu, User, LogOut, ChevronDown } from "lucide-react";
+import { Menu, User, LogOut, ChevronDown, Smartphone } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface NavItem {
   label: string;
@@ -15,6 +16,9 @@ interface NavItem {
 const Header: React.FC = () => {
   const { user: currentUser, logoutMutation } = useAuth();
   const [scrolled, setScrolled] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [location] = useLocation();
+  const { toast } = useToast();
   
   // Handle scroll events for transparent/solid header transition
   useEffect(() => {
@@ -28,6 +32,23 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [scrolled]);
+  
+  // Detect mobile devices for optimized experience
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+      
+      if (mobile) {
+        console.log('Mobile browser detected in Header');
+      }
+    };
+    
+    checkMobile();
+    
+    // Log current page for debugging
+    console.log('Current location:', location);
+  }, [location]);
 
   // Define navigation items based on authentication state
   const publicNavItems: NavItem[] = [
@@ -47,7 +68,47 @@ const Header: React.FC = () => {
   const navItems: NavItem[] = currentUser ? authenticatedNavItems : publicNavItems;
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    // Show toast for better user experience
+    toast({
+      title: "Logging out...",
+      description: "Please wait while we sign you out",
+    });
+    
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        // Provide feedback for successful logout
+        toast({
+          title: "Logout successful",
+          description: "You have been signed out",
+        });
+        
+        // Use direct navigation for mobile devices to avoid caching issues
+        if (isMobile) {
+          console.log("Using direct navigation for mobile logout");
+          window.location.href = '/';
+        }
+      },
+      onError: (error) => {
+        console.error("Logout error:", error);
+        toast({
+          variant: "destructive",
+          title: "Logout failed",
+          description: "There was a problem signing you out. Please try again.",
+        });
+      }
+    });
+  };
+  
+  // Handle mobile-specific login option
+  const handleMobileLogin = (e: React.MouseEvent) => {
+    if (isMobile) {
+      e.preventDefault();
+      // Log for debugging
+      console.log("Mobile login redirect");
+      
+      // Try direct navigation with query params for mobile
+      window.location.href = '/auth?mobile=true';
+    }
   };
 
   return (
@@ -125,15 +186,20 @@ const Header: React.FC = () => {
           ) : (
             /* Public user actions */
             <>
-              <Link href="/auth">
+              <Link href="/auth" onClick={handleMobileLogin}>
                 <Button 
                   variant="ghost" 
                   className="hidden md:inline-flex text-charcoal/90 hover:text-primary hover:bg-transparent"
                 >
-                  Log In
+                  {isMobile ? (
+                    <span className="flex items-center">
+                      <Smartphone className="h-3 w-3 mr-1" />
+                      Mobile Login
+                    </span>
+                  ) : "Log In"}
                 </Button>
               </Link>
-              <Link href="/auth">
+              <Link href="/auth?tab=register" onClick={handleMobileLogin}>
                 <Button className="bg-primary text-white hover:bg-primary/90 rounded-full shadow-sm px-6 py-2 justify-center min-w-[120px]">
                   Get Started
                 </Button>
@@ -212,17 +278,22 @@ const Header: React.FC = () => {
                     ) : (
                       /* Public mobile actions */
                       <>
-                        <Link href="/auth" className="w-full">
+                        <Link href="/auth?tab=register" className="w-full" onClick={handleMobileLogin}>
                           <Button className="bg-primary text-white hover:bg-primary/90 w-full rounded-full py-2 justify-center">
                             Get Started
                           </Button>
                         </Link>
-                        <Link href="/auth" className="w-full">
+                        <Link href="/auth?mobile=true" className="w-full" onClick={handleMobileLogin}>
                           <Button 
                             variant="outline" 
                             className="border-gray-200 text-charcoal hover:bg-gray-50 w-full rounded-full py-2 justify-center"
                           >
-                            Log In
+                            {isMobile ? (
+                              <span className="flex items-center justify-center">
+                                <Smartphone className="h-4 w-4 mr-2" />
+                                Mobile Login
+                              </span>
+                            ) : "Log In"}
                           </Button>
                         </Link>
                       </>

@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation, useRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -16,9 +16,35 @@ import DocumentsPage from "@/pages/documents-page";
 import DocumentUploadPage from "@/pages/document-upload-page";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
+// Enhanced router component that handles mobile navigation better
 function Router() {
   const { user, isLoading } = useAuth();
+  const [location] = useLocation();
+  const router = useRouter();
+  
+  // This effect ensures we clean up any hash fragments that might cause issues
+  useEffect(() => {
+    // Remove hash from URL if present (can cause issues on some mobile browsers)
+    if (window.location.hash && window.location.hash !== '#/') {
+      console.log('Removing hash fragment:', window.location.hash);
+      window.history.replaceState(
+        null, 
+        document.title, 
+        window.location.pathname + window.location.search
+      );
+    }
+    
+    // Log navigation for debugging
+    console.log('Current path:', location);
+    console.log('User authenticated:', !!user);
+    
+    // Handle special case for root path on mobile
+    if (location === '/' && window.innerWidth < 768) {
+      console.log('Mobile device detected at root path');
+    }
+  }, [location, user]);
   
   // Show loading spinner while auth check is in progress
   if (isLoading) {
@@ -31,26 +57,34 @@ function Router() {
   
   // If not authenticated, only show public routes
   if (!user) {
+    // Render public routes with more specific route definitions
     return (
       <Switch>
         <Route path="/auth" component={AuthPage} />
+        <Route path="/auth/:tab">
+          {(params) => <AuthPage tab={params.tab} />}
+        </Route>
         <Route path="/" component={Home} />
-        <Route component={NotFound} />
+        <Route path="*" component={NotFound} />
       </Switch>
     );
   }
   
-  // If authenticated, only show protected routes (including redirect from auth page)
+  // If authenticated, show protected routes with more specific route definitions
   return (
     <Switch>
       <Route path="/auth">
+        <Redirect to="/" />
+      </Route>
+      <Route path="/auth/:tab">
         <Redirect to="/" />
       </Route>
       <Route path="/" component={NewDashboardPage} />
       <Route path="/executors" component={ExecutorsPage} />
       <Route path="/estate" component={EstatePage} />
       <Route path="/documents" component={DocumentsPage} />
-      <Route component={NotFound} />
+      <Route path="/documents/upload" component={DocumentUploadPage} />
+      <Route path="*" component={NotFound} />
     </Switch>
   );
 }

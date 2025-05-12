@@ -49,6 +49,9 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
+  // Detect mobile browsers for special handling
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  
   // Query for getting the current user
   const {
     data: user,
@@ -58,24 +61,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
+  
+  // For mobile browsers, log any authentication issues
+  if (isMobile && error) {
+    console.error('Mobile auth error:', error);
+    
+    // Check if we have a mobile auth timestamp
+    const mobileAuthTimestamp = localStorage.getItem('mobile_auth_timestamp');
+    if (mobileAuthTimestamp) {
+      const timeSinceAuth = (Date.now() - parseInt(mobileAuthTimestamp)) / 1000;
+      console.log(`Mobile auth error occurred ${timeSinceAuth} seconds after authentication attempt`);
+    }
+  }
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
+      // For mobile devices, store login timestamp for session verification
+      if (isMobile) {
+        console.log('Mobile login attempt for:', credentials.email);
+        localStorage.setItem('mobile_auth_timestamp', Date.now().toString());
+        localStorage.setItem('mobile_last_email', credentials.email);
+      }
+      
       const res = await apiRequest("POST", "/api/login", credentials);
       const data = await res.json();
       return data;
     },
     onSuccess: (user: AuthUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Store successful auth result in localStorage for mobile session recovery
+      if (isMobile) {
+        console.log('Mobile login successful, storing session data');
+        localStorage.setItem('mobile_auth_success', 'true');
+        localStorage.setItem('mobile_auth_user', JSON.stringify({
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName
+        }));
+      }
+      
       toast({
         title: "Login successful",
         description: `Welcome back${user.firstName ? ', ' + user.firstName : ''}!`,
       });
+      
       // Redirect to the root path which renders the dashboard
       window.location.href = "/";
     },
     onError: (error: Error) => {
+      // Record login errors for mobile troubleshooting
+      if (isMobile) {
+        console.error('Mobile login error:', error);
+        localStorage.setItem('mobile_auth_error', error.message);
+      }
+      
       // For all login errors, show a toast but don't automatically redirect
       toast({
         title: "Login failed",

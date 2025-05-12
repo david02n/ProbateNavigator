@@ -19,9 +19,24 @@ export async function apiRequest(
       ? origin 
       : 'Development';
     
-    console.log(`[API Request] ${method} ${url} from ${domain}`);
+    // Check if it's a mobile browser for special handling
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const mobileState = isMobile ? 'Mobile Browser' : 'Desktop Browser';
+    
+    console.log(`[API Request] ${method} ${url} from ${domain} (${mobileState})`);
     if (data) {
       console.log('[API Request] Data:', JSON.stringify(data).substring(0, 200) + (JSON.stringify(data).length > 200 ? '...' : ''));
+    }
+    
+    // For mobile authentication requests, update localStorage to help maintain session
+    if (isMobile && (url.includes('/api/login') || url.includes('/api/auth/google'))) {
+      console.log('[API Request] Mobile authentication request detected');
+      localStorage.setItem('mobile_auth_timestamp', Date.now().toString());
+      
+      // Store minimal user info for session recovery if needed
+      if (data && typeof data === 'object' && 'email' in data) {
+        localStorage.setItem('mobile_last_email', (data as any).email);
+      }
     }
     
     // Check if URL should be absolute in production environments
@@ -84,8 +99,21 @@ export const getQueryFn: <T>(options: {
       const domain = origin.includes('replit.app') || origin.includes('probateswift.com') 
         ? origin 
         : 'Development';
+        
+      // Check if it's a mobile browser for special handling
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const mobileState = isMobile ? 'Mobile Browser' : 'Desktop Browser';
       
-      console.log(`[Query] GET ${url} from ${domain}`);
+      console.log(`[Query] GET ${url} from ${domain} (${mobileState})`);
+      
+      // Check for mobile auth timestamp to help with session recovery
+      if (isMobile && url === '/api/user') {
+        const mobileAuthTimestamp = localStorage.getItem('mobile_auth_timestamp');
+        if (mobileAuthTimestamp) {
+          const timeSinceAuth = Date.now() - parseInt(mobileAuthTimestamp);
+          console.log(`[Query] Mobile auth was ${timeSinceAuth / 1000} seconds ago`);
+        }
+      }
       
       // Check if URL should be absolute in production environments
       let requestUrl = url;
@@ -128,7 +156,10 @@ export const getQueryFn: <T>(options: {
       
       try {
         return await res.json();
-      } catch (parseError) {
+      } catch (error) {
+        // Type the error more explicitly
+        const parseError = error as Error;
+        
         // Handle empty or non-JSON responses
         console.error(`[Query Error] Failed to parse JSON response from ${url}:`, parseError);
         if (res.status === 204) { // No Content

@@ -30,7 +30,7 @@ export const NewHeader: React.FC<HeaderProps> = ({ className = "" }) => {
   // Navigation links - only shown when authenticated
   const navLinks = [
     { name: "Dashboard", path: "/", active: location === "/" },
-    { name: "Applicants", path: "/executors", active: location === "/executors" },
+    { name: "People", path: "/people", active: location === "/people" },
     { name: "Estate", path: "/estate", active: location === "/estate" },
     { name: "Documents", path: "/documents", active: location === "/documents" },
   ];

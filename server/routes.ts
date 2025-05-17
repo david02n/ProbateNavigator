@@ -1037,15 +1037,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return null;
         }
       } else if (typeof documentData === 'object') {
-        certificateData = documentData;
+        // If it's already an object, see if we need to traverse its structure
+        if (documentData.webhookResponse) {
+          try {
+            // Try to parse the content if it's a string
+            if (typeof documentData.webhookResponse.content === 'string') {
+              const match = documentData.webhookResponse.content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+              if (match && match[1]) {
+                certificateData = JSON.parse(match[1]);
+              } else {
+                // If no JSON found in markdown format, try direct parsing
+                certificateData = JSON.parse(documentData.webhookResponse.content);
+              }
+            } else {
+              // If content is already an object
+              certificateData = documentData.webhookResponse.content;
+            }
+          } catch (err) {
+            console.error("Error parsing JSON from object structure:", err);
+            certificateData = documentData; // Fallback to using the entire object
+          }
+        } else {
+          certificateData = documentData;
+        }
       }
       
+      // If still no certificateData, log and return
       if (!certificateData) {
         console.error("No certificate data found in webhook response");
+        console.log("Raw documentData:", JSON.stringify(documentData, null, 2));
         return null;
       }
       
-      console.log("Extracted death certificate data:", certificateData);
+      console.log("Extracted death certificate data:", JSON.stringify(certificateData, null, 2));
+      
+      // Split first name into first and middle if it contains spaces
+      let firstName = '';
+      let middleNames = '';
+      
+      if (certificateData.firstName) {
+        const nameParts = certificateData.firstName.trim().split(/\s+/);
+        firstName = nameParts[0];
+        if (nameParts.length > 1) {
+          middleNames = nameParts.slice(1).join(' ');
+        }
+      }
       
       // Create a new person from the death certificate data
       const personData = {
@@ -1053,9 +1089,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: document.userId,
         
         // Map fields from the death certificate to the person record
-        firstName: certificateData.firstName || '',
-        middleNames: '', // We don't concatenate first and middle names
-        lastName: certificateData.surname || certificateData.lastName || '',
+        firstName: firstName || certificateData.firstName || 'Unknown',
+        middleNames: middleNames,
+        lastName: certificateData.surname || certificateData.lastName || 'Unknown',
         
         // Address fields - handle different possible formats
         addressLine1: certificateData.address || '',
@@ -1084,12 +1120,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update the probate case to link it to the deceased person
         const probateCase = await storage.getProbateCase(document.caseId);
         if (probateCase) {
+          // Use a spread operator to include deceasedId in a safer way
           await storage.updateProbateCase(probateCase.id, {
             deceasedFirstName: newPerson.firstName, 
             deceasedLastName: newPerson.lastName,
             deceasedDateOfBirth: certificateData.dateOfBirth || null,
             deceasedDateOfDeath: certificateData.dateOfDeath || null,
-            deceasedId: newPerson.id // Link to the deceased person
+            // Handle deceasedId separately to avoid type errors
+            ...(newPerson.id ? { deceasedId: newPerson.id } : {})
           });
           console.log("Updated probate case with deceased person:", newPerson.id);
         }
@@ -1124,23 +1162,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Special handling for death certificates - create a person record
-      if (document.type === 'death_certificate' && metadata) {
-        console.log("Processing death certificate document:", document.id);
-        const newPerson = await createPersonFromDeathCertificate(document.id, metadata);
-        
-        // If person was created successfully, update the document notes
-        if (newPerson) {
-          await storage.updateDocument(document.id, {
-            notes: JSON.stringify({
-              message: "Document processed by webhook",
-              documentType: "death_certificate",
-              webhookResponse: metadata,
-              personCreated: true,
-              personId: newPerson.id
-            })
-          });
+      if (document && document.type === 'death_certificate' && metadata) {
+        try {
+          console.log("Processing death certificate document:", document.id);
+          const newPerson = await createPersonFromDeathCertificate(document.id, metadata);
           
-          console.log("Updated document notes with person creation info");
+          // If person was created successfully, update the document notes
+          if (newPerson) {
+            await storage.updateDocument(document.id, {
+              notes: JSON.stringify({
+                message: "Document processed by webhook",
+                documentType: "death_certificate",
+                webhookResponse: metadata,
+                personCreated: true,
+                personId: newPerson.id
+              })
+            });
+            
+            console.log("Updated document notes with person creation info");
+          }
+        } catch (error) {
+          console.error("Error processing death certificate:", error);
+          // Don't fail the webhook processing if person creation fails
         }
       }
       

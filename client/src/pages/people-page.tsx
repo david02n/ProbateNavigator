@@ -164,6 +164,7 @@ const PeoplePage: React.FC = () => {
   // Document-based person addition
   const [isPersonFromDocModalOpen, setIsPersonFromDocModalOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
+  const [isProcessingDocument, setIsProcessingDocument] = useState(false);
   
   // Fetch documents when modal is open
   const { data: documentList = [] } = useQuery<Document[]>({
@@ -2030,7 +2031,7 @@ const PeoplePage: React.FC = () => {
                 </Button>
                 <Button
                   type="button"
-                  disabled={!selectedDocumentType || selectedDocumentType === 'other'}
+                  disabled={!selectedDocumentType || selectedDocumentType === 'other' || isProcessingDocument}
                   onClick={() => {
                     if (selectedDocumentType === 'other') {
                       toast({
@@ -2040,68 +2041,209 @@ const PeoplePage: React.FC = () => {
                       return;
                     }
                     
-                    // Process any document type selection
-                    if (selectedDocumentType) {
-                      // Create a simple person based on document type
-                      if (activeCaseId) {
-                        const personData = {
-                          caseId: activeCaseId,
-                          userId: user?.id,
-                          firstName: selectedDocumentType === 'death_certificate' ? 'Deceased' : 'Person',
-                          lastName: 'From Document',
-                          isExecutor: selectedDocumentType === 'will',
-                          isApplicant: false,
-                          needsMoreInfo: true,
-                          relationshipToDeceased: selectedDocumentType === 'death_certificate' ? 'Deceased' : '',
-                        };
-                        
-                        // Create the person directly
-                        createExecutorMutation.mutate(personData);
-                        
-                        toast({
-                          title: "Person Created",
-                          description: `A person record has been created from the ${selectedDocumentType.replace('_', ' ')}. Please edit to add details.`,
-                        });
-                        
-                        setIsPersonFromDocModalOpen(false);
-                      }
-                    }
-                    
-                    // Only show this toast if we didn't process the document earlier
                     if (!selectedDocumentType) {
                       toast({
                         title: "Document Type Required",
                         description: "Please select a document type",
                       });
+                      return;
                     }
                     
-                    // Pre-fill a new person form with some default values based on document type
-                    const newPerson = {
-                      firstName: selectedDocumentType === 'will' ? 'Executor' : 'Person',
-                      lastName: 'From Document',
-                      status: 'needs_more_info'
-                    };
-                    
-                    // Instead of opening the form, directly create a new person from the document
-                    if (activeCaseId && selectedDocumentType) {
-                      // Create a new person with the document details
-                      createExecutorMutation.mutate({
-                        firstName: newPerson.firstName,
-                        lastName: newPerson.lastName,
-                        caseId: activeCaseId,
-                        userId: user?.id,
-                        isExecutor: selectedDocumentType === 'will',
-                        isApplicant: selectedDocumentType === 'id_document',
-                        needsMoreInfo: true,
-                        relationshipToDeceased: selectedDocumentType === 'death_certificate' ? 'Deceased' : ''
-                      });
+                    // Find documents of the selected type
+                    if (selectedDocumentType === 'death_certificate') {
+                      const deathCerts = documentList.filter((doc: any) => doc.type === 'death_certificate');
+                      
+                      if (deathCerts.length === 0) {
+                        toast({
+                          title: "No Death Certificate Found",
+                          description: "Please upload a death certificate first",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      
+                      // Start document processing
+                      setIsProcessingDocument(true);
+                      
+                      // Get the latest death certificate
+                      const latestCert = deathCerts[0];
+                      
+                      try {
+                        // Extract document data from notes
+                        if (latestCert.notes) {
+                          console.log("Processing document notes:", latestCert.notes);
+                          let extractedData = null;
+                          
+                          try {
+                            // Parse the JSON from the notes
+                            const notesObj = JSON.parse(latestCert.notes);
+                            
+                            // Handle webhook response structure if present
+                            if (notesObj.webhookResponse && notesObj.webhookResponse.content) {
+                              const match = notesObj.webhookResponse.content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+                              if (match && match[1]) {
+                                extractedData = JSON.parse(match[1]);
+                                console.log("Extracted data from webhookResponse:", extractedData);
+                              }
+                            }
+                          } catch (err) {
+                            console.error("Error extracting data from notes:", err);
+                          }
+                          
+                          // If we have extracted data, create a person with it
+                          if (extractedData && extractedData.person) {
+                            const personData: any = {
+                              caseId: activeCaseId,
+                              userId: user?.id,
+                              firstName: extractedData.person.firstName || "Deceased",
+                              lastName: extractedData.person.surname || extractedData.person.lastName || "Person",
+                              isExecutor: false,
+                              isApplicant: false,
+                              needsMoreInfo: true,
+                              relationshipToDeceased: 'Deceased',
+                              documentId: latestCert.id
+                            };
+                            
+                            // Add middle names if present
+                            if (extractedData.person.middleNames) {
+                              personData.middleNames = extractedData.person.middleNames;
+                            }
+                            
+                            // Add dates if present
+                            if (extractedData.person.dateOfBirth) {
+                              personData.dateOfBirth = extractedData.person.dateOfBirth;
+                            }
+                            
+                            if (extractedData.person.dateOfDeath) {
+                              personData.dateOfDeath = extractedData.person.dateOfDeath;
+                            }
+                            
+                            // Add address if present
+                            if (extractedData.person.address) {
+                              if (extractedData.person.address.street) {
+                                personData.addressLine1 = extractedData.person.address.street;
+                              }
+                              
+                              if (extractedData.person.address.city) {
+                                personData.city = extractedData.person.address.city;
+                              }
+                              
+                              if (extractedData.person.address.postcode) {
+                                personData.postCode = extractedData.person.address.postcode;
+                              }
+                            }
+                            
+                            // Add place of death if present
+                            if (extractedData.registration && extractedData.registration.placeOfDeath) {
+                              personData.placeOfDeath = extractedData.registration.placeOfDeath;
+                            }
+                            
+                            // Create the person from document data
+                            createExecutorMutation.mutate(personData, {
+                              onSuccess: () => {
+                                toast({
+                                  title: "Deceased Person Created",
+                                  description: "Person record created with data from death certificate",
+                                });
+                                setIsProcessingDocument(false);
+                                setIsPersonFromDocModalOpen(false);
+                              },
+                              onError: (error) => {
+                                console.error("Error creating person:", error);
+                                toast({
+                                  title: "Error Creating Person",
+                                  description: "There was an error creating the person record",
+                                  variant: "destructive"
+                                });
+                                setIsProcessingDocument(false);
+                              }
+                            });
+                          } else {
+                            // No data extracted, create a simple person record
+                            const personData = {
+                              caseId: activeCaseId,
+                              userId: user?.id,
+                              firstName: "Deceased",
+                              lastName: "Person",
+                              isExecutor: false,
+                              isApplicant: false,
+                              needsMoreInfo: true,
+                              relationshipToDeceased: 'Deceased',
+                              documentId: latestCert.id
+                            };
+                            
+                            createExecutorMutation.mutate(personData, {
+                              onSuccess: () => {
+                                toast({
+                                  title: "Deceased Person Created",
+                                  description: "Basic person record created. Please fill in additional details.",
+                                });
+                                setIsProcessingDocument(false);
+                                setIsPersonFromDocModalOpen(false);
+                              },
+                              onError: () => {
+                                setIsProcessingDocument(false);
+                                toast({
+                                  title: "Error Creating Person",
+                                  description: "There was an error creating the person record",
+                                  variant: "destructive"
+                                });
+                              }
+                            });
+                          }
+                        } else {
+                          // No notes in document, create a simple person
+                          toast({
+                            title: "No Data Available",
+                            description: "No data could be extracted from the document",
+                            variant: "destructive"
+                          });
+                          setIsProcessingDocument(false);
+                        }
+                      } catch (error) {
+                        console.error("Error processing document:", error);
+                        toast({
+                          title: "Processing Error",
+                          description: "There was an error processing the document data",
+                          variant: "destructive"
+                        });
+                        setIsProcessingDocument(false);
+                      }
+                    } else {
+                      // For other document types, create a simple person record
+                      if (activeCaseId) {
+                        const personData = {
+                          caseId: activeCaseId,
+                          userId: user?.id,
+                          firstName: selectedDocumentType === 'will' ? 'Executor' : 'Person',
+                          lastName: 'From Document',
+                          isExecutor: selectedDocumentType === 'will',
+                          isApplicant: selectedDocumentType === 'id_document',
+                          needsMoreInfo: true,
+                          relationshipToDeceased: ''
+                        };
+                        
+                        createExecutorMutation.mutate(personData, {
+                          onSuccess: () => {
+                            toast({
+                              title: "Person Created",
+                              description: `A person record has been created from the ${selectedDocumentType.replace('_', ' ')}. Please edit to add details.`,
+                            });
+                            setIsPersonFromDocModalOpen(false);
+                          }
+                        });
+                      }
                     }
-                    
-                    // Close the modal
-                    setIsPersonFromDocModalOpen(false);
                   }}
                 >
-                  Extract Person Details
+                  {isProcessingDocument ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing Document...
+                    </>
+                  ) : (
+                    "Extract Person Details"
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>

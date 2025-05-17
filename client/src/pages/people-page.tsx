@@ -792,11 +792,45 @@ const PeoplePage: React.FC = () => {
                     setIsPersonFromDocModalOpen(true);
                   }}
                 >
-                  <AlertCircle className="h-5 w-5 text-primary" />
+                  <FileText className="h-5 w-5 text-primary" />
                   <span>Add from Document</span>
                 </Button>
                 
-
+                <Button 
+                  variant="outline" 
+                  className="flex-1 flex items-center justify-center gap-2 border-dashed border-primary/50 hover:bg-primary/5"
+                  onClick={() => {
+                    if (!activeCaseId) {
+                      toast({
+                        title: "No probate case",
+                        description: "Please create a probate case first",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    // Create a deceased person directly
+                    const personData = {
+                      caseId: activeCaseId,
+                      userId: user?.id,
+                      firstName: "Deceased",
+                      lastName: "Person",
+                      isExecutor: false,
+                      isApplicant: false,
+                      needsMoreInfo: true,
+                      relationshipToDeceased: 'Deceased'
+                    };
+                    
+                    createExecutorMutation.mutate(personData);
+                    toast({
+                      title: "Deceased Person Created",
+                      description: "A deceased person record has been created. Please edit to add the correct details.",
+                    });
+                  }}
+                >
+                  <AlertCircle className="h-5 w-5 text-primary" />
+                  <span>Add Deceased Person</span>
+                </Button>
               </div>
               
               <div className="space-y-6">
@@ -2047,11 +2081,7 @@ const PeoplePage: React.FC = () => {
                       if (deathCerts.length > 0) {
                         try {
                           // Find the most recent death certificate
-                          const latestCert = deathCerts.reduce((latest, current) => {
-                            return !latest || (current.createdAt && latest.createdAt && new Date(current.createdAt) > new Date(latest.createdAt)) 
-                              ? current 
-                              : latest;
-                          }, null);
+                          const latestCert = deathCerts.length > 0 ? deathCerts[0] : null;
                           
                           if (latestCert && latestCert.notes) {
                             // Try to extract data

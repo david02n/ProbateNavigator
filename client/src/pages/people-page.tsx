@@ -1513,7 +1513,9 @@ const PeoplePage: React.FC = () => {
                   <div className="space-y-4 border-t pt-4">
                     <h3 className="text-sm font-medium mt-2">Role & Relationship</h3>
                     
-                    {!isLegalProfessional && (
+                    {/* Only show relationship dropdown if not already marked as deceased or in editing mode but not deceased */}
+                    {!isLegalProfessional && 
+                     (!isEditing || (isEditing && form.getValues().relationshipToDeceased !== "Deceased")) && (
                       <FormField
                         control={form.control}
                         name="relationshipToDeceased"
@@ -1549,6 +1551,13 @@ const PeoplePage: React.FC = () => {
                           </FormItem>
                         )}
                       />
+                    )}
+                    
+                    {/* Show a simple note when editing an existing deceased person */}
+                    {isEditing && form.getValues().relationshipToDeceased === "Deceased" && (
+                      <div className="text-sm text-gray-600 py-2">
+                        This person is marked as the deceased.
+                      </div>
                     )}
                     
                     {/* Role checkboxes - only shown when not Deceased */}

@@ -796,41 +796,7 @@ const PeoplePage: React.FC = () => {
                   <span>Add from Document</span>
                 </Button>
                 
-                <Button 
-                  variant="outline" 
-                  className="flex-1 flex items-center justify-center gap-2 border-dashed border-primary/50 hover:bg-primary/5"
-                  onClick={() => {
-                    if (!activeCaseId) {
-                      toast({
-                        title: "No probate case",
-                        description: "Please create a probate case first",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    
-                    // Create a deceased person directly
-                    const personData = {
-                      caseId: activeCaseId,
-                      userId: user?.id,
-                      firstName: "Deceased",
-                      lastName: "Person",
-                      isExecutor: false,
-                      isApplicant: false,
-                      needsMoreInfo: true,
-                      relationshipToDeceased: 'Deceased'
-                    };
-                    
-                    createExecutorMutation.mutate(personData);
-                    toast({
-                      title: "Deceased Person Created",
-                      description: "A deceased person record has been created. Please edit to add the correct details.",
-                    });
-                  }}
-                >
-                  <AlertCircle className="h-5 w-5 text-primary" />
-                  <span>Add Deceased Person</span>
-                </Button>
+
               </div>
               
               <div className="space-y-6">
@@ -2074,138 +2040,30 @@ const PeoplePage: React.FC = () => {
                       return;
                     }
                     
-                    // Process Death Certificate Document
-                    if (selectedDocumentType === 'death_certificate') {
-                      const deathCerts = documentList.filter((doc: Document) => doc.type === 'death_certificate');
-                      
-                      if (deathCerts.length > 0) {
-                        try {
-                          // Find the most recent death certificate
-                          const latestCert = deathCerts.length > 0 ? deathCerts[0] : null;
-                          
-                          if (latestCert && latestCert.notes) {
-                            // Try to extract data
-                            let extractedData = null;
-                            
-                            try {
-                              const notesObj = JSON.parse(latestCert.notes);
-                              
-                              if (notesObj.webhookResponse && notesObj.webhookResponse.content) {
-                                const match = notesObj.webhookResponse.content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
-                                if (match && match[1]) {
-                                  extractedData = JSON.parse(match[1]);
-                                  console.log("Extracted data from webhookResponse:", extractedData);
-                                }
-                              }
-                            } catch (err) {
-                              console.error("Error extracting data from notes:", err);
-                            }
-                            
-                            if (extractedData) {
-                              // Get name fields
-                              let firstName = '';
-                              let middleNames = '';
-                              let lastName = '';
-                              
-                              if (extractedData.person) {
-                                // Nested structure
-                                if (extractedData.person.firstName) {
-                                  const nameParts = extractedData.person.firstName.trim().split(/\s+/);
-                                  firstName = nameParts[0];
-                                  if (nameParts.length > 1) {
-                                    middleNames = nameParts.slice(1).join(' ');
-                                  }
-                                }
-                                
-                                lastName = extractedData.person.surname || extractedData.person.lastName || '';
-                                
-                                // Create person from death certificate with extracted data
-                                if (activeCaseId) {
-                                  const personData = {
-                                    caseId: activeCaseId,
-                                    userId: user?.id,
-                                    firstName: firstName,
-                                    middleNames: middleNames,
-                                    lastName: lastName,
-                                    isExecutor: false,
-                                    isApplicant: false,
-                                    needsMoreInfo: true,
-                                    relationshipToDeceased: 'Deceased',
-                                    documentId: latestCert.id
-                                  };
-                                  
-                                  // Create the person directly
-                                  createExecutorMutation.mutate(personData);
-                                  
-                                  toast({
-                                    title: "Deceased Person Created",
-                                    description: "A deceased person record has been created from the death certificate data.",
-                                  });
-                                  
-                                  setIsPersonFromDocModalOpen(false);
-                                  return;
-                                }
-                              } else {
-                                // Flat structure
-                                if (extractedData.firstName) {
-                                  const nameParts = extractedData.firstName.trim().split(/\s+/);
-                                  firstName = nameParts[0];
-                                  if (nameParts.length > 1) {
-                                    middleNames = nameParts.slice(1).join(' ');
-                                  }
-                                }
-                                
-                                lastName = extractedData.surname || extractedData.lastName || '';
-                                
-                                // Create person from death certificate with extracted data
-                                if (activeCaseId) {
-                                  const personData = {
-                                    caseId: activeCaseId,
-                                    userId: user?.id,
-                                    firstName: firstName,
-                                    middleNames: middleNames,
-                                    lastName: lastName,
-                                    isExecutor: false,
-                                    isApplicant: false,
-                                    needsMoreInfo: true,
-                                    relationshipToDeceased: 'Deceased',
-                                    documentId: latestCert.id
-                                  };
-                                  
-                                  // Create the person directly
-                                  createExecutorMutation.mutate(personData);
-                                  
-                                  toast({
-                                    title: "Deceased Person Created",
-                                    description: "A deceased person record has been created from the death certificate data.",
-                                  });
-                                  
-                                  setIsPersonFromDocModalOpen(false);
-                                  return;
-                                }
-                              }
-                            }
-                          } else {
-                            toast({
-                              title: "Processing Error",
-                              description: "Could not extract data from the death certificate",
-                              variant: "destructive",
-                            });
-                          }
-                        } catch (err) {
-                          console.error("Error processing death certificate:", err);
-                          toast({
-                            title: "Processing Error",
-                            description: "There was an error processing the death certificate data",
-                            variant: "destructive",
-                          });
-                        }
-                      } else {
+                    // Process any document type selection
+                    if (selectedDocumentType) {
+                      // Create a simple person based on document type
+                      if (activeCaseId) {
+                        const personData = {
+                          caseId: activeCaseId,
+                          userId: user?.id,
+                          firstName: selectedDocumentType === 'death_certificate' ? 'Deceased' : 'Person',
+                          lastName: 'From Document',
+                          isExecutor: selectedDocumentType === 'will',
+                          isApplicant: false,
+                          needsMoreInfo: true,
+                          relationshipToDeceased: selectedDocumentType === 'death_certificate' ? 'Deceased' : '',
+                        };
+                        
+                        // Create the person directly
+                        createExecutorMutation.mutate(personData);
+                        
                         toast({
-                          title: "No Death Certificate Found",
-                          description: "Please upload a death certificate first",
-                          variant: "destructive",
+                          title: "Person Created",
+                          description: `A person record has been created from the ${selectedDocumentType.replace('_', ' ')}. Please edit to add details.`,
                         });
+                        
+                        setIsPersonFromDocModalOpen(false);
                       }
                     }
                     

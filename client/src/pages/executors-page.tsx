@@ -144,13 +144,13 @@ const PeoplePage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/executors"] });
       toast({
-        title: "Executor added",
-        description: "The executor has been added successfully",
+        title: "Person added",
+        description: "The person has been added successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error adding executor",
+        title: "Error adding person",
         description: error.message,
         variant: "destructive",
       });
@@ -166,8 +166,8 @@ const PeoplePage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/executors"] });
       toast({
-        title: "Executor updated",
-        description: "The executor has been updated successfully",
+        title: "Person updated",
+        description: "The person has been updated successfully",
       });
     },
     onError: (error: Error) => {

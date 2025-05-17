@@ -1383,8 +1383,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (id && typeof id === 'string') {
         try {
           console.log(`Fetching full address details for id: ${id}`);
-          const response = await axios.get(`https://api.getAddress.io/get/${id}?api-key=${apiKey}`);
+          // Directly use the provided ID with the getaddress.io API
+          const getAddressUrl = `https://api.getaddress.io/get/${id}?api-key=${apiKey}`;
+          console.log(`Making request to: ${getAddressUrl.replace(apiKey, '[REDACTED]')}`);
+          
+          const response = await axios.get(getAddressUrl);
           console.log('Successfully received full address details from GetAddress.io');
+          console.log('Address data:', JSON.stringify(response.data, null, 2).substring(0, 200) + '...');
           return res.json(response.data);
         } catch (detailError: any) {
           console.error("Error fetching address details:", detailError.message);

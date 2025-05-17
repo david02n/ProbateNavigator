@@ -279,22 +279,25 @@ const PeoplePage: React.FC = () => {
       // Find the selected address suggestion
       const selectedAddress = addressSuggestions.find(suggestion => suggestion.id === id);
       
-      if (!selectedAddress || !selectedAddress.rawAddress) {
-        throw new Error('Address not found or missing data');
+      if (!selectedAddress) {
+        throw new Error('Address not found in suggestions');
       }
       
       console.log("Selected address:", selectedAddress);
       
       setIsLoadingAddresses(true);
       
-      // Get the URL from the rawAddress (this is the path to retrieve full details)
-      const urlPath = selectedAddress.rawAddress.url;
-      if (!urlPath) {
-        throw new Error('Missing URL path for address details');
+      // Get the URL path from the response - it should have a url property like "/get/AbC123..."
+      if (!selectedAddress.rawAddress || !selectedAddress.rawAddress.url) {
+        throw new Error('Address data is missing URL path');
       }
       
       // Extract just the ID part from the URL (format is /get/{id})
-      const detailsId = urlPath.split('/').pop();
+      const urlPath = selectedAddress.rawAddress.url;
+      const idMatch = urlPath.match(/\/get\/([^?]+)/);
+      const detailsId = idMatch ? idMatch[1] : urlPath.split('/').pop();
+      
+      console.log("Fetching details for address ID:", detailsId);
       
       // Get the full address details from the API
       const response = await fetch(`/api/address-lookup?id=${encodeURIComponent(detailsId)}`);
@@ -307,17 +310,49 @@ const PeoplePage: React.FC = () => {
       console.log("Received full address data:", addressData);
       
       // Map the returned fields to our form fields according to the specified mapping
-      const addressLine1 = addressData.line_1 || ''; // BUILDING AND STREET
-      const addressLine2 = addressData.line_2 || ''; // SECOND LINE OF ADDRESS
-      const city = addressData.town_or_city || ''; // TOWN OR CITY
+      // First try the fields as shown in your example JSON structure
+      let addressLine1 = addressData.line_1 || ''; // BUILDING AND STREET
+      let addressLine2 = addressData.line_2 || ''; // SECOND LINE OF ADDRESS
+      let city = addressData.town_or_city || ''; // TOWN OR CITY
       let county = addressData.county || ''; // COUNTY (primary selection)
+      let postcode = addressData.postcode || '';
+      
+      // If those aren't available, try the formatted_address array
+      if (addressData.formatted_address && Array.isArray(addressData.formatted_address)) {
+        // Formatted address has this structure:
+        // [0] = Building name/company (e.g., "Prime Minister & First Lord of the Treasury")
+        // [1] = Address line 1 (e.g., "10 Downing Street")
+        // [2] = Address line 2 (often empty)
+        // [3] = Town/City (e.g., "London")
+        // [4] = County (often empty)
+        
+        if (!addressLine1 && addressData.formatted_address[0]) {
+          addressLine1 = addressData.formatted_address[0];
+        }
+        
+        if (!addressLine2 && addressData.formatted_address[1]) {
+          addressLine2 = addressData.formatted_address[1];
+        }
+        
+        // If line 2 is empty but line 3 has content, use it for line 2
+        if (!addressLine2 && addressData.formatted_address[2]) {
+          addressLine2 = addressData.formatted_address[2];
+        }
+        
+        if (!city && addressData.formatted_address[3]) {
+          city = addressData.formatted_address[3];
+        }
+        
+        // Try to get county from the last element if not already set
+        if (!county && addressData.formatted_address[4]) {
+          county = addressData.formatted_address[4];
+        }
+      }
       
       // If county is empty, try using district as a fallback
       if (!county && addressData.district) {
-        county = addressData.district; // COUNTY (secondary selection)
+        county = addressData.district;
       }
-      
-      const postcode = addressData.postcode || '';
       
       console.log("Mapped address components:", {
         addressLine1,

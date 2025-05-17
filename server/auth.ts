@@ -85,7 +85,8 @@ export function setupAuth(app: Express) {
     
     // For production domain
     if (host.includes('probateswift.com')) {
-      return '.probateswift.com';
+      // Use exact domain without leading dot for better compatibility
+      return 'probateswift.com';
     } 
     
     // For Replit domains - special handling for development
@@ -181,18 +182,21 @@ export function setupAuth(app: Express) {
     
     // Configure cookie settings for this request
     const cookieSettings: session.CookieOptions = {
-      secure: secure,
+      secure: true, // Always use secure cookies in production
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: isMobile ? 'lax' : 'none', // Use 'lax' for mobile, 'none' for cross-site on desktop
+      sameSite: 'none', // Use 'none' for cross-site support on all browsers
       httpOnly: true,
     };
     
-    // Additional protections for iOS browsers that have stricter cookie policies
+    // iOS browsers already handled by default settings above
     if (isMobile && /iPad|iPhone|iPod/i.test(userAgent) && !(/CriOS|FxiOS/i.test(userAgent))) {
-      console.log('iOS browser detected, using stricter cookie settings');
-      // For iOS browsers, make cookies more permissive to work with their limitations
-      cookieSettings.sameSite = 'none';
-      cookieSettings.secure = true; // iOS requires secure for SameSite=None
+      console.log('iOS browser detected');
+    }
+    
+    // Force secure cookies in production environment regardless of other settings
+    if (isProbateSwift || process.env.NODE_ENV === 'production') {
+      cookieSettings.secure = true;
+      console.log('Production environment detected, forcing secure cookies');
     }
     
     // Add domain if available

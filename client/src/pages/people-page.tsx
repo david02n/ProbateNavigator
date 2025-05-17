@@ -18,7 +18,9 @@ import {
   MapPin,
   Search,
   X,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  Upload
 } from "lucide-react";
 import axios from "axios";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -114,9 +116,18 @@ const executorFormSchema = z.object({
   isExecutor: z.boolean().default(false),
   isApplicant: z.boolean().default(false),
   isNotifying: z.boolean().default(false),
+  needsMoreInfo: z.boolean().default(false),
   // Backward compatibility fields
   address: z.string().optional(),
   phone: z.string().optional(),
+});
+
+// Create a more permissive schema for partial form submissions
+const partialExecutorFormSchema = executorFormSchema.partial().extend({
+  // Only require first name for partial submissions
+  firstName: z.string().min(1, { message: "First name is required" }),
+  // Mark as needing more info by default
+  needsMoreInfo: z.boolean().default(true),
 });
 
 type ExecutorFormValues = z.infer<typeof executorFormSchema>;
@@ -1717,7 +1728,7 @@ const PeoplePage: React.FC = () => {
                       <label className="text-sm font-medium">Upload a new document</label>
                       <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
                         <div className="text-center">
-                          <FileUp className="mx-auto h-12 w-12 text-gray-300" />
+                          <Upload className="mx-auto h-12 w-12 text-gray-300" />
                           <div className="mt-4 flex text-sm leading-6 text-gray-600">
                             <label
                               htmlFor="file-upload"

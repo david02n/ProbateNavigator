@@ -384,11 +384,13 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
         // Check if it has webhookResponse (another common format)
         else if (parsedNotes.webhookResponse && parsedNotes.webhookResponse.content) {
           const content = parsedNotes.webhookResponse.content;
+          
+          // First check if content contains a JSON code block
           if (content.includes('```json')) {
             const jsonMatch = content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
             if (jsonMatch && jsonMatch[1]) {
               const parsedData = JSON.parse(jsonMatch[1]);
-              console.log("Extracted data from webhookResponse:", parsedData);
+              console.log("Extracted data from webhookResponse JSON code block:", parsedData);
               
               // Process nested structure for death certificates
               if (parsedData.person) {
@@ -418,6 +420,24 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
               } else {
                 extractedData = parsedData;
               }
+            }
+          } else {
+            // Try parsing content directly as JSON (new flat structure)
+            try {
+              const parsedData = JSON.parse(content);
+              console.log("Parsed webhookResponse content as direct JSON:", parsedData);
+              extractedData = parsedData;
+              
+              // Format address from individual fields for flat structure
+              if (parsedData.street || parsedData.city || parsedData.postcode) {
+                const addressParts = [];
+                if (parsedData.street) addressParts.push(parsedData.street);
+                if (parsedData.city) addressParts.push(parsedData.city);
+                if (parsedData.postcode) addressParts.push(parsedData.postcode);
+                extractedData.address = addressParts.join(', ');
+              }
+            } catch (err) {
+              console.log("webhookResponse content is not directly parseable JSON:", err);
             }
           }
         }

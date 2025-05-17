@@ -11,24 +11,28 @@ const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 console.log('Is mobile device:', isMobile ? 'yes' : 'no');
 
 // Determine the appropriate authDomain based on environment
-let authDomain = `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`;
+let authDomain = 'probate-458709.firebaseapp.com'; // Default Firebase authDomain
 
-// For production domain, we need to use probateswift.com as the authDomain
-// This is critical for Firebase auth to work properly in production
-const isProductionDomain = window.location.hostname === 'probateswift.com' || 
-                           window.location.hostname.endsWith('.probateswift.com');
+// Set correct authDomain based on current hostname
+// This is critical for Firebase auth to work properly across environments
+const hostname = window.location.hostname;
 
-if (isProductionDomain) {
-  // For production, use the actual domain
-  authDomain = 'probateswift.com';
+// For production domain or replit app domain, use the exact authDomain from Firebase console
+if (hostname === 'probateswift.com' || hostname.includes('probateswift.replit.app')) {
+  // Use the official Firebase authDomain here (NOT the current domain)
+  // This is important for the OAuth redirect to work correctly
+  console.log('Using Firebase authDomain for production');
 }
 
+// Use the exact Firebase config values from your Firebase console
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyCWeCvuiXsoQCdn_E4yRDh2QT4j4-fQBo0",
+  authDomain: "probate-458709.firebaseapp.com",
+  projectId: "probate-458709",
+  storageBucket: "probate-458709.firebasestorage.app",
+  messagingSenderId: "321971954611",
+  appId: "1:321971954611:web:580f68844b10e7e6e6e1c6",
+  measurementId: "G-1YW4Q67L65"
 };
 
 // Initialize Firebase

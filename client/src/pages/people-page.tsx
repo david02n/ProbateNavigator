@@ -165,6 +165,12 @@ const PeoplePage: React.FC = () => {
   const [isPersonFromDocModalOpen, setIsPersonFromDocModalOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
   
+  // Fetch documents when modal is open
+  const { data: documentList = [] } = useQuery<Document[]>({
+    queryKey: ['/api/documents'],
+    enabled: isPersonFromDocModalOpen
+  });
+  
   // Initialize form with validation
   const form = useForm<ExecutorFormValues>({
     resolver: zodResolver(executorFormSchema),
@@ -2034,9 +2040,9 @@ const PeoplePage: React.FC = () => {
                       return;
                     }
                     
-                    // For death certificate specific processing, extract data from documents
-                    if (selectedDocumentType === 'death_certificate' && documents && documents.length > 0) {
-                      const deathCerts = documents.filter(doc => doc.type === 'death_certificate');
+                    // Process Death Certificate Document
+                    if (selectedDocumentType === 'death_certificate') {
+                      const deathCerts = documentList.filter((doc: Document) => doc.type === 'death_certificate');
                       
                       if (deathCerts.length > 0) {
                         try {
@@ -2050,6 +2056,7 @@ const PeoplePage: React.FC = () => {
                           if (latestCert && latestCert.notes) {
                             // Try to extract data
                             let extractedData = null;
+                            
                             try {
                               const notesObj = JSON.parse(latestCert.notes);
                               
@@ -2148,10 +2155,27 @@ const PeoplePage: React.FC = () => {
                                 }
                               }
                             }
+                          } else {
+                            toast({
+                              title: "Processing Error",
+                              description: "Could not extract data from the death certificate",
+                              variant: "destructive",
+                            });
                           }
                         } catch (err) {
                           console.error("Error processing death certificate:", err);
+                          toast({
+                            title: "Processing Error",
+                            description: "There was an error processing the death certificate data",
+                            variant: "destructive",
+                          });
                         }
+                      } else {
+                        toast({
+                          title: "No Death Certificate Found",
+                          description: "Please upload a death certificate first",
+                          variant: "destructive",
+                        });
                       }
                     }
                     

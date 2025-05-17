@@ -1,0 +1,16 @@
+documents is not defined
+documents is not defined
+documents is not defined
+documents is not defined
+documents is not defined
+documents is not defined
+at onClick (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/src/pages/people-page.tsx?t=1747506240659:3825:69)
+at HTMLUnknownElement.callCallback2 (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:3674:22)
+at Object.invokeGuardedCallbackDev (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:3699:24)
+at invokeGuardedCallback (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:3733:39)
+at invokeGuardedCallbackAndCatchFirstError (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:3736:33)
+at executeDispatch (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:7014:11)
+at processDispatchQueueItemsInOrder (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:7034:15)
+at processDispatchQueue (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:7043:13)
+at dispatchEventsForPlugins (https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:7051:11)
+at https://5bca2899-fa21-4c31-ae3b-96f6f1fd49b8-00-1ga9cnt9wumxw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=eac3d25b:7174:20

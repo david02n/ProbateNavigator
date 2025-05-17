@@ -192,82 +192,148 @@ const PeoplePage: React.FC = () => {
     setShowAddressSuggestions(true);
     
     try {
-      // In a production environment, we would use:
-      // const response = await axios.get(`https://api.getAddress.io/find/${postcode}?api-key=${API_KEY}`);
+      console.log("Looking up addresses for postcode:", postcode);
       
-      // For development purposes, we'll make a direct call to our backend proxy
+      // Call our backend proxy endpoint that communicates with GetAddress.io
       const response = await fetch(`/api/address-lookup?postcode=${encodeURIComponent(postcode)}`);
       
       if (!response.ok) {
+        // Check for specific errors
+        if (response.status === 404) {
+          toast({
+            title: "Postcode not found",
+            description: "Please check the postcode and try again, or enter your address manually.",
+            variant: "destructive",
+          });
+          setIsLoadingAddresses(false);
+          setShowAddressSuggestions(false);
+          return;
+        }
+        
+        if (response.status === 401) {
+          toast({
+            title: "Please log in",
+            description: "You need to be logged in to use this feature.",
+            variant: "destructive",
+          });
+          setIsLoadingAddresses(false);
+          setShowAddressSuggestions(false);
+          return;
+        }
+        
         throw new Error('Failed to fetch addresses');
       }
       
       const data = await response.json();
+      console.log("Address lookup response:", data);
       
-      // Format addresses from response
-      const suggestions: PostcodeLookupSuggestion[] = data.addresses.map((address: string, index: number) => ({
-        id: `${postcode}-${index}`,
-        address: `${address}, ${postcode}`
-      }));
-      
-      if (suggestions.length === 0) {
+      // Make sure we got addresses back
+      if (!data.addresses || data.addresses.length === 0) {
         toast({
           title: "No addresses found",
           description: "No addresses were found for this postcode. Please check the postcode or enter your address manually.",
+          variant: "destructive",
         });
+        setIsLoadingAddresses(false);
+        setShowAddressSuggestions(false);
+        return;
       }
       
+      // Format addresses from response (GetAddress.io returns an array of strings)
+      const suggestions: PostcodeLookupSuggestion[] = data.addresses.map((address: string, index: number) => ({
+        id: `${postcode}-${index}`,
+        address: address ? `${address}, ${postcode}` : postcode
+      }));
+      
       setAddressSuggestions(suggestions);
-      setIsLoadingAddresses(false);
+      toast({
+        title: "Addresses found",
+        description: `Found ${suggestions.length} addresses for this postcode.`,
+      });
     } catch (error) {
       console.error("Error fetching addresses:", error);
       
-      // Fallback to mock data for demo purposes when API is not available
-      const mockSuggestions: PostcodeLookupSuggestion[] = [
-        { id: "addr1", address: "10 Watkin Terrace, Northampton, NN1 3ER" },
-        { id: "addr2", address: "11 Watkin Terrace, Northampton, NN1 3ER" },
-        { id: "addr3", address: "12 Watkin Terrace, Northampton, NN1 3ER" },
-      ];
-      
-      setAddressSuggestions(mockSuggestions);
-      setIsLoadingAddresses(false);
-      
       toast({
-        title: "Using sample addresses",
-        description: "We're showing sample addresses for demonstration. In production, this would use the real postcode lookup service.",
+        title: "Address lookup failed",
+        description: "There was a problem looking up addresses. Please try again or enter your address manually.",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoadingAddresses(false);
     }
   };
   
-  // Function to fetch full address details
+  // Function to process the selected address and populate form fields
   const fetchAddressDetails = async (id: string) => {
     try {
-      // Parse the full address from the selection
+      // Find the selected address from our suggestions
       const selectedAddress = addressSuggestions.find(suggestion => suggestion.id === id);
       
       if (!selectedAddress) {
         throw new Error('Address not found');
       }
       
-      // Format: "Address Line 1, Address Line 2, City, Postcode"
-      const addressParts = selectedAddress.address.split(', ');
+      console.log("Selected address:", selectedAddress);
       
-      // In a real implementation we would call the full address details API
-      // Here we'll parse the components from the suggestion string
-      const addressDetails: PostcodeLookupResult = {
-        postcode: addressParts[addressParts.length - 1],
-        line_1: addressParts[0],
-        line_2: addressParts.length > 3 ? addressParts[1] : '',
-        town_or_city: addressParts.length > 3 ? addressParts[2] : addressParts[1],
-        county: ''
-      };
+      // Format from GetAddress.io: "Building Name/Number, Street Name, Locality, Town/City, County, Postcode"
+      // The selectedAddress.address will be in format "Full Address, Postcode"
+      const fullAddress = selectedAddress.address;
+      
+      // Extract the postcode (last part)
+      const addressParts = fullAddress.split(', ');
+      const postcode = addressParts[addressParts.length - 1];
+      
+      // Now extract the address components
+      // Remove the postcode from the address parts
+      addressParts.pop();
+      
+      let addressLine1 = '';
+      let addressLine2 = '';
+      let city = '';
+      let county = '';
+      
+      // GetAddress.io typically returns components in this order:
+      // [0] = Building number/name
+      // [1] = Street name
+      // [Optional] = Locality
+      // [n-2] = Town/City (where n is array length)
+      // [n-1] = County (where n is array length)
+      
+      if (addressParts.length > 0) {
+        // Building number/name + Street = Address Line 1
+        if (addressParts.length >= 2) {
+          addressLine1 = addressParts.slice(0, 2).join(', ');
+          
+          // If there are more than 3 parts, use the middle ones for address line 2
+          if (addressParts.length >= 4) {
+            addressLine2 = addressParts.slice(2, addressParts.length - 2).join(', ');
+            city = addressParts[addressParts.length - 2];
+            county = addressParts[addressParts.length - 1];
+          } 
+          // If there are exactly 3 parts, use the last one for city
+          else if (addressParts.length === 3) {
+            city = addressParts[2];
+          }
+        } else {
+          // If there's only one part, use it as address line 1
+          addressLine1 = addressParts[0];
+        }
+      }
+      
+      console.log("Parsed address components:", {
+        addressLine1,
+        addressLine2,
+        city,
+        county,
+        postcode
+      });
       
       // Fill the form with the address details
-      form.setValue("addressLine1", addressDetails.line_1);
-      form.setValue("addressLine2", addressDetails.line_2);
-      form.setValue("city", addressDetails.town_or_city);
-      form.setValue("county", addressDetails.county);
-      form.setValue("postCode", addressDetails.postcode);
+      form.setValue("addressLine1", addressLine1);
+      form.setValue("addressLine2", addressLine2);
+      form.setValue("city", city);
+      form.setValue("county", county);
+      form.setValue("postCode", postcode);
       
       // Close the suggestions dropdown
       setShowAddressSuggestions(false);
@@ -275,13 +341,13 @@ const PeoplePage: React.FC = () => {
       
       toast({
         title: "Address selected",
-        description: "The address has been filled in the form. You can edit it if needed.",
+        description: "The address has been filled in the form. You can now edit or complete any missing details if needed.",
       });
     } catch (error) {
-      console.error("Error fetching address details:", error);
+      console.error("Error processing address details:", error);
       toast({
-        title: "Failed to get address details",
-        description: "There was an error retrieving the address details. Please try again or enter your address manually.",
+        title: "Failed to process address",
+        description: "There was an error processing the address details. Please try again or enter your address manually.",
         variant: "destructive",
       });
     }

@@ -1,221 +1,122 @@
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithPopup, browserSessionPersistence, setPersistence } from 'firebase/auth';
-import { apiRequest } from './queryClient';
-import { auth } from './firebase';
+// Special Google auth handling for iOS and mobile browsers
+import { GoogleAuthProvider, getAuth, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { apiRequest } from "./queryClient";
 
-// Initialize provider
+// Get firebase auth instance
+const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
-// Set persistence to browser session for Firebase auth
-setPersistence(auth, browserSessionPersistence)
-  .catch((error) => {
-    console.error("Error setting auth persistence:", error);
-  });
-
-// Custom error subclass
-class GoogleAuthError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'GoogleAuthError';
+/**
+ * Enhanced Google Sign-in function that uses popup for iOS
+ * and redirect for other platforms
+ */
+export async function signInWithGoogle() {
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+  
+  console.log('Enhanced Google sign-in triggered');
+  console.log('Device detection:', isMobile ? 'Mobile' : 'Desktop', isIOS ? '(iOS)' : '');
+  
+  try {
+    if (isIOS) {
+      // For iOS devices, use popup which has better compatibility
+      console.log('Using popup auth method for iOS');
+      
+      // Add special params to track source
+      provider.setCustomParameters({
+        // Force account selection even when one account is available
+        prompt: 'select_account',
+        // Custom state parameter to help with debugging
+        state: 'ios_auth'
+      });
+      
+      const result = await signInWithPopup(auth, provider);
+      console.log('Popup auth successful');
+      
+      // The signed-in user info
+      const user = result.user;
+      
+      // This gives you a Google Access Token
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const idToken = await user.getIdToken();
+      
+      // Send the token to your backend
+      console.log('Sending auth data to backend...');
+      await sendTokenToBackend(idToken, user.email, user.displayName, user.photoURL);
+      
+      return result;
+    } else {
+      // For all other devices, use redirect which is more seamless
+      console.log('Using redirect auth method for non-iOS');
+      
+      // Add URL parameters to help with debugging
+      provider.setCustomParameters({
+        // Force account selection even when one account is available
+        prompt: 'select_account',
+        // Custom state parameter to help with redirect handling
+        state: 'redirect_auth'
+      });
+      
+      await signInWithRedirect(auth, provider);
+      // Control goes to the redirect page, so we don't return anything here
+    }
+  } catch (error) {
+    console.error('Google authentication error:', error);
+    throw error;
   }
 }
 
 /**
- * Get the correct return URL based on the current environment
- * This is crucial for Firebase auth to work correctly across domains
+ * Process the redirect result after Google sign-in
  */
-const getReturnUrl = (): string => {
-  const origin = window.location.origin;
-  const hostname = window.location.hostname;
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
-  // Special handling for mobile devices (especially iOS)
-  const mobileParam = isMobile ? '&mobile=true' : '';
-  
-  // For production domain, ensure we use the proper origin
-  if (hostname === 'probateswift.com' || hostname.endsWith('.probateswift.com')) {
-    // Make sure we have a fully qualified URL for mobile devices
-    return `https://${hostname}/auth?authReturn=true${mobileParam}`;
-  }
-  
-  // For Replit domains
-  if (hostname.includes('replit')) {
-    return `${origin}/auth?authReturn=true${mobileParam}`;
-  }
-  
-  // Add state parameter to help identify return from auth
-  return `${origin}/auth?authReturn=true${mobileParam}`;
-};
-
-/**
- * Initiates the Google sign-in flow, first trying popup and falling back to redirect if necessary
- * @returns User data if popup authentication succeeded, otherwise null (for redirect)
- */
-export const signInWithGoogle = async () => {
-  // Add scopes if needed
-  provider.addScope('profile');
-  provider.addScope('email');
-  
-  // Log environment info for debugging
-  console.log('Environment info for debugging:');
-  console.log('- URL:', window.location.href);
-  console.log('- Origin:', window.location.origin);
-  console.log('- Hostname:', window.location.hostname);
-  console.log('- Firebase authDomain:', auth.app.options.authDomain);
-  
-  // Detect mobile browsers - especially iOS which needs special handling
-  const userAgent = navigator.userAgent;
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(userAgent);
-  const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
-  
-  console.log('- Device type:', isMobile ? (isIOS ? 'iOS Mobile' : 'Android Mobile') : 'Desktop');
-  
-  // Set custom parameters
-  provider.setCustomParameters({
-    prompt: 'select_account',
-    // Ensure the return URL uses the proper domain
-    redirect_uri: getReturnUrl()
-  });
-  
-  // For iOS devices, we should go straight to redirect as popup rarely works correctly
-  if (isIOS) {
-    console.log('iOS device detected, using redirect for better compatibility');
-    await signInWithRedirect(auth, provider);
-    return null; // No immediate result with redirect flow
-  }
-  
+export async function processRedirectResult() {
   try {
-    // For non-iOS devices, first try with popup, which is more reliable on most browsers
-    console.log('Attempting Google sign-in with popup...');
-    const result = await signInWithPopup(auth, provider);
-    console.log('Popup sign-in successful, user:', result.user.email);
-    
-    // Process the result immediately if popup succeeds
-    return await processAuthResult(result);
-  } catch (error: any) {
-    // Special handling for mobile or cross-domain issues
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    
-    console.log(`Popup sign-in failed (${errorCode}), falling back to redirect:`, errorMessage);
-    
-    // Check if we had a cross-origin error that suggests we should use redirect
-    if (errorCode === 'auth/popup-blocked' || 
-        errorCode === 'auth/popup-closed-by-user' ||
-        errorCode === 'auth/internal-error' ||
-        errorMessage.includes('cross-origin')) {
-      console.log('Redirecting for authentication due to popup issues...');
-      
-      // Some browsers/devices work better with redirect
-      await signInWithRedirect(auth, provider);
-      return null; // No immediate result with redirect flow
-    }
-    
-    // For other errors, throw them to be handled by the calling component
-    throw new GoogleAuthError(`Sign-in failed: ${errorMessage || 'Unknown error'}`);
-  }
-};
-
-/**
- * Process authentication result from either popup or redirect
- */
-const processAuthResult = async (result: any) => {
-  if (!result) {
-    console.error('No authentication result to process');
-    return null;
-  }
-  
-  try {
-    // Get the user info and ID token
-    const user = result.user;
-    const idToken = await user.getIdToken();
-    
-    if (!user.email) {
-      throw new GoogleAuthError('No email provided by Google account');
-    }
-    
-    console.log('Sending Google auth data to backend...');
-    
-    // Log debugging info
-    const currentOrigin = window.location.origin;
-    const hostname = window.location.hostname;
-    console.log(`Processing auth on domain: ${hostname} (${currentOrigin})`);
-    
-    // Send the token to our backend to create/authenticate the user
-    const response = await apiRequest('POST', '/api/auth/google', {
-      idToken,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage;
-      
-      try {
-        // Try to parse as JSON
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.message || 'Server authentication failed';
-      } catch(e) {
-        // If not valid JSON, use the text directly
-        errorMessage = errorText || `Failed to authenticate (${response.status})`;
-      }
-      
-      throw new GoogleAuthError(errorMessage);
-    }
-    
-    console.log('Backend authentication successful');
-    
-    // Return the user data from our backend
-    return await response.json();
-  } catch (error: any) {
-    console.error('Failed to process auth result:', error);
-    throw new GoogleAuthError(error.message || 'Failed to process authentication');
-  }
-};
-
-/**
- * Handles the redirect result after returning from Google authentication
- * @returns The user object if successful, null if no redirect result
- */
-export const handleRedirectResult = async () => {
-  try {
-    console.log('Checking for redirect result...');
+    console.log('Processing Google redirect result...');
     const result = await getRedirectResult(auth);
     
-    if (!result) {
-      console.log('No redirect result found');
-      return null; // No redirect result, not coming back from Google auth
-    }
-    
-    console.log('Redirect result found, processing...');
-    return await processAuthResult(result);
-    
-  } catch (error: any) {
-    // Special handling for error codes
-    const errorCode = typeof error.code === 'string' ? error.code : 'unknown';
-    const errorMessage = error.message || 'Authentication redirect failed';
-    
-    console.error(`Google auth redirect error [${errorCode}]:`, errorMessage);
-    
-    if (errorCode === 'auth/credential-already-in-use') {
-      throw new GoogleAuthError('This Google account is already linked to another user');
-    } else if (errorCode === 'auth/account-exists-with-different-credential') {
-      throw new GoogleAuthError('An account already exists with the same email but different sign-in credentials');
+    if (result) {
+      // User is signed in
+      console.log('Redirect result processed successfully');
+      const user = result.user;
+      const idToken = await user.getIdToken();
+      
+      // Send the token to your backend
+      await sendTokenToBackend(idToken, user.email, user.displayName, user.photoURL);
+      
+      return result;
     } else {
-      throw new GoogleAuthError(`Authentication failed: ${errorMessage}`);
+      console.log('No redirect result found');
+      return null;
     }
+  } catch (error) {
+    console.error('Error processing redirect:', error);
+    throw error;
   }
-};
+}
 
 /**
- * Signs out the currently signed-in user
+ * Send the authentication token to the backend
  */
-export const signOut = async (): Promise<void> => {
+async function sendTokenToBackend(idToken: string, email: string | null, displayName: string | null, photoURL: string | null) {
   try {
-    await auth.signOut();
-    console.log('User signed out successfully');
+    if (!email) {
+      console.error('No email available in Google auth result');
+      throw new Error('Email is required for authentication');
+    }
+    
+    console.log('Sending auth data to backend for', email);
+    
+    const response = await apiRequest('/api/auth/google', 'POST', {
+        idToken,
+        email,
+        displayName,
+        photoURL
+      });
+    
+    console.log('Backend authentication successful:', response);
+    return response;
   } catch (error) {
-    console.error('Error signing out:', error);
+    console.error('Failed to authenticate with backend:', error);
+    throw error;
   }
-};
+}

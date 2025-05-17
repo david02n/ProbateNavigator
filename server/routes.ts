@@ -80,9 +80,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Google auth request received:');
       console.log(`Email: ${email || 'Not provided'}`);
       console.log(`User Agent: ${req.headers['user-agent'] || 'Not provided'}`);
-      console.log(`Is Mobile: ${/Mobi|Android|iPhone|iPad|iPod/i.test(req.headers['user-agent'] || '')}`);
+      
+      // Enhanced mobile detection
+      const userAgent = req.headers['user-agent'] || '';
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(userAgent);
+      const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
+      console.log(`Is Mobile: ${isMobile ? 'Yes' : 'No'}${isIOS ? ' (iOS)' : ''}`);
       console.log(`Origin: ${req.headers.origin || 'Not provided'}`);
       console.log(`Host: ${req.headers.host || 'Not provided'}`);
+      console.log(`Referer: ${req.headers.referer || 'Not provided'}`);
       
       if (!email) {
         return res.status(400).json({ error: 'Email is required' });

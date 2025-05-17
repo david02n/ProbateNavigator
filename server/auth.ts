@@ -180,12 +180,13 @@ export function setupAuth(app: Express) {
       });
     }
     
-    // Configure cookie settings for this request
+    // Configure cookie settings for this request with cross-domain support
     const cookieSettings: session.CookieOptions = {
       secure: true, // Always use secure cookies in production
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: isMobile ? 'lax' : 'none', // Use 'lax' for mobile browsers which handle 'none' poorly
+      sameSite: 'none', // Use 'none' to allow cross-domain cookies for probateswift.com <-> probateswift.replit.app
       httpOnly: true,
+      path: '/',
     };
     
     // iOS browsers already handled by default settings above
@@ -204,14 +205,15 @@ export function setupAuth(app: Express) {
       cookieSettings.domain = domain;
     }
     
-    // Create session settings with the appropriate cookie configuration
+    // Create session settings with enhanced cross-domain cookie support
     const currentSettings: session.SessionOptions = {
       secret: process.env.SESSION_SECRET || "probate-swift-session-secret",
-      resave: false,
-      saveUninitialized: false,
+      resave: true, // Changed to true to ensure session is saved on every request
+      saveUninitialized: true, // Changed to true to create session for all requests
       store: storage.sessionStore,
       cookie: cookieSettings,
-      name: isProbateSwift ? 'probswft.sid' : (isReplit ? 'rpltsid' : 'connect.sid'),
+      name: 'probswft.sid', // Use consistent cookie name across all environments
+      proxy: true, // Trust proxy headers for secure cookie detection
     };
     
     // Create and use session with the appropriate settings

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, useLocation, useRoute } from "wouter";
 import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
-import { handleRedirectResult } from "@/lib/googleAuth";
+import { handleRedirectResult } from "@/lib/firebase";
 
 // Extend Window interface to include our shared functions
 declare global {
@@ -75,7 +75,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
     const mobileParam = searchParams.get('mobile');
-    const authReturn = searchParams.get('authReturn');
+    const authReturn = searchParams.get('state') || searchParams.get('authReturn');
     
     // Check mobile status from different sources
     const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);

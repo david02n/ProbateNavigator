@@ -544,18 +544,28 @@ const PeoplePage: React.FC = () => {
     setIsEditing(true);
     setIsLegalProfessional(executor.relationshipToDeceased === "Legal Professional");
     
-    // Populate form with person data
+    // Populate form with person data, ensuring all address fields are correctly populated
     form.reset({
       firstName: executor.firstName,
       lastName: executor.lastName,
+      middleNames: executor.middleNames || "",
+      title: executor.title || "",
       email: executor.email || "",
       phone: executor.phone || "",
-      address: executor.address || "",
+      phoneHome: executor.phoneHome || "",
+      phoneMobile: executor.phoneMobile || "",
+      // Make sure all address fields are explicitly set
+      addressLine1: executor.addressLine1 || executor.address || "",
+      addressLine2: executor.addressLine2 || "",
       city: executor.city || "",
+      county: executor.county || "",
       postCode: executor.postCode || "",
       relationshipToDeceased: executor.relationshipToDeceased || "",
+      isExecutor: executor.isExecutor || false,
       isApplicant: executor.isApplicant || false,
       isNotifying: executor.isNotifying || false,
+      isNameDifferentInWill: executor.isNameDifferentInWill || false,
+      altNameInWill: executor.altNameInWill || ""
     });
     
     setIsPersonModalOpen(true);

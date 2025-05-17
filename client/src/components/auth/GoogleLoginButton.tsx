@@ -21,7 +21,21 @@ const GoogleLoginButton = ({ className = '' }: GoogleLoginButtonProps) => {
       console.log('Starting Google login from', domain.includes('replit') ? 'development domain' : 'production domain');
       
       // Use the signInWithGoogle function from googleAuth.ts
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      
+      if (result) {
+        console.log('Google login successful, redirecting to dashboard');
+        
+        // Show success toast
+        toast({
+          title: 'Login Successful',
+          description: 'You have been logged in successfully.',
+          variant: 'default',
+        });
+        
+        // Redirect to dashboard after successful login
+        window.location.href = '/';
+      }
       
     } catch (error) {
       console.error('Google login error:', error);

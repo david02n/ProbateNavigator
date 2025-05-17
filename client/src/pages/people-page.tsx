@@ -1852,14 +1852,24 @@ const PeoplePage: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="border rounded-lg p-4 bg-gray-50 relative">
+                  {/* Coming Soon Overlay */}
+                  <div className="absolute inset-0 bg-gray-100/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg">
+                    <div className="bg-primary text-white font-semibold px-4 py-2 rounded-full mb-2">
+                      Coming Soon
+                    </div>
+                    <p className="text-center text-gray-600 max-w-md px-4">
+                      The "Add from Document" feature is currently in development. This will allow you to extract person details directly from uploaded documents.
+                    </p>
+                  </div>
+                  
                   <h3 className="text-sm font-medium mb-3">Choose Document Source</h3>
                   
                   <div className="space-y-3">
                     {/* Select from previously uploaded documents */}
                     <div className="flex flex-col space-y-2">
                       <label className="text-sm font-medium">Select from uploaded documents</label>
-                      <Select disabled={!selectedDocumentType}>
+                      <Select disabled={true}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select an uploaded document" />
                         </SelectTrigger>
@@ -1888,15 +1898,9 @@ const PeoplePage: React.FC = () => {
                       <div className="hidden sm:flex mt-2 justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
                         <div className="text-center">
                           <Upload className="mx-auto h-12 w-12 text-gray-300" />
-                          <div className="mt-4 flex text-sm leading-6 text-gray-600">
-                            <label
-                              htmlFor="file-upload-desktop"
-                              className="relative cursor-pointer rounded-md bg-white font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary"
-                            >
-                              <span>Upload a file</span>
-                              <input id="file-upload-desktop" name="file-upload" type="file" accept="image/*,.pdf" className="sr-only" />
-                            </label>
-                            <p className="pl-1">or drag and drop</p>
+                          <div className="mt-4 text-sm leading-6 text-gray-600">
+                            <span className="font-semibold text-primary">Upload a file</span>
+                            <span className="pl-1">or drag and drop</span>
                           </div>
                           <p className="text-xs leading-5 text-gray-600">PDF, PNG, JPG up to 10MB</p>
                         </div>
@@ -1906,60 +1910,19 @@ const PeoplePage: React.FC = () => {
                       <div className="sm:hidden mt-4">
                         <div className="grid grid-cols-2 gap-3">
                           {/* Take Photo */}
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            className="flex flex-col items-center justify-center h-24 p-2"
-                            onClick={() => {
-                              // This would typically open the camera
-                              toast({
-                                title: "Camera Access",
-                                description: "Camera access requested to take a photo.",
-                              });
-                            }}
-                          >
-                            <Upload className="h-8 w-8 mb-2 text-gray-500" />
-                            <span className="text-sm text-center">Take Photo</span>
-                          </Button>
+                          <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
+                            <Upload className="h-8 w-8 mb-2 text-gray-400" />
+                            <span className="text-sm text-center text-gray-400">Take Photo</span>
+                          </div>
                           
                           {/* Choose from Camera Roll */}
-                          <label 
-                            htmlFor="file-upload-mobile" 
-                            className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input bg-transparent hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                          >
-                            <FileText className="h-8 w-8 mb-2 text-gray-500" />
-                            <span className="text-sm text-center">Camera Roll</span>
-                            <input 
-                              id="file-upload-mobile" 
-                              type="file" 
-                              accept="image/*,.pdf" 
-                              capture="environment" 
-                              className="sr-only" 
-                            />
-                          </label>
+                          <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
+                            <FileText className="h-8 w-8 mb-2 text-gray-400" />
+                            <span className="text-sm text-center text-gray-400">Camera Roll</span>
+                          </div>
                         </div>
-                        
-                        {/* Description text for mobile */}
-                        <p className="text-xs text-center mt-2 text-gray-500">
-                          Take a photo or select from your gallery
-                        </p>
                       </div>
                     </div>
-                    
-                    {/* Additional description field for "Other" document type */}
-                    {selectedDocumentType === 'other' && (
-                      <div className="mt-3">
-                        <label className="text-sm font-medium">Document Description</label>
-                        <Input 
-                          type="text" 
-                          placeholder="Describe the document (e.g., Power of Attorney)"
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Please provide a description to help us correctly process this document
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

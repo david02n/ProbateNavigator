@@ -2090,8 +2090,31 @@ const PeoplePage: React.FC = () => {
                             console.error("Error extracting data from notes:", err);
                           }
                           
+                          // First, check if a person was already created from this document
+                          // by checking if personCreated flag is in the document notes
+                          let personAlreadyCreated = false;
+                          
+                          try {
+                            const notesObj = JSON.parse(latestCert.notes);
+                            if (notesObj.personCreated === true) {
+                              personAlreadyCreated = true;
+                              console.log("Person already created from this document");
+                              toast({
+                                title: "Person Already Exists",
+                                description: "A person record was already created from this document",
+                              });
+                              setIsProcessingDocument(false);
+                              setIsPersonFromDocModalOpen(false);
+                              return;
+                            }
+                          } catch (err) {
+                            // If we can't parse the notes or personCreated flag isn't there,
+                            // assume no person record was created yet
+                            console.log("Couldn't determine if person was already created:", err);
+                          }
+                          
                           // If we have extracted data, create a person with it
-                          if (extractedData && extractedData.person) {
+                          if (!personAlreadyCreated && extractedData && extractedData.person) {
                             const personData: any = {
                               caseId: activeCaseId,
                               userId: user?.id,

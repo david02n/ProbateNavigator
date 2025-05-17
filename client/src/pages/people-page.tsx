@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import NewHeader from "@/components/layout/NewHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -727,7 +728,6 @@ const PeoplePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <NewHeader />
-      
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Page Title */}

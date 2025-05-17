@@ -121,6 +121,26 @@ const NewDashboardPage: React.FC = () => {
     },
   });
 
+  // Dashboard data refresh when component mounts
+  useEffect(() => {
+    // Refetch all data on dashboard load
+    const refreshDashboardData = async () => {
+      console.log("Refreshing dashboard data...");
+      await queryClient.invalidateQueries({ queryKey: ["/api/assessment"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/probate-cases"] });
+      
+      // Only refresh case-specific data if we have an active case
+      if (activeCase?.id) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/assets", activeCase.id] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/liabilities", activeCase.id] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/executors", activeCase.id] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/documents", activeCase.id] });
+      }
+    };
+    
+    refreshDashboardData();
+  }, []);
+  
   // Check if we need to create a probate case when assessment is completed
   useEffect(() => {
     if (assessmentResult && assessmentResult.isProbateRequired && probateCases.length === 0 && !createCaseMutation.isPending && !isLoadingCases) {

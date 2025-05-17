@@ -1593,14 +1593,72 @@ const PeoplePage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <DialogFooter>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsPersonModalOpen(false)}
-                    >
-                      Cancel
-                    </Button>
+                  <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex items-center gap-2 w-full justify-start">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setIsPersonModalOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          // Use partial validation for saving incomplete information
+                          const currentValues = form.getValues();
+                          
+                          // Validate using the partial schema (only requires firstName)
+                          const result = partialExecutorFormSchema.safeParse({
+                            ...currentValues,
+                            needsMoreInfo: true
+                          });
+                          
+                          if (result.success) {
+                            // Form data is valid for partial save
+                            const formData = {
+                              ...currentValues,
+                              needsMoreInfo: true,
+                              caseId: activeCaseId!,
+                              userId: user?.id
+                            };
+                            
+                            if (isEditing) {
+                              // Update existing record
+                              updateExecutorMutation.mutate({
+                                id: editingExecutorId!,
+                                data: formData
+                              });
+                            } else {
+                              // Create new record
+                              createExecutorMutation.mutate(formData);
+                            }
+                          } else {
+                            // Show validation errors for the minimal required fields
+                            toast({
+                              title: "Missing information",
+                              description: "Please at least provide a first name",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        disabled={createExecutorMutation.isPending || updateExecutorMutation.isPending}
+                      >
+                        {createExecutorMutation.isPending || updateExecutorMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Save Incomplete
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
                     <Button 
                       type="submit"
                       className="bg-primary hover:bg-primary/90"
@@ -1612,7 +1670,10 @@ const PeoplePage: React.FC = () => {
                           Saving...
                         </>
                       ) : (
-                        isEditing ? "Update Person" : "Save Person"
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          {isEditing ? "Update Person" : "Save Person"}
+                        </>
                       )}
                     </Button>
                   </DialogFooter>

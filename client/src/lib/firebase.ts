@@ -19,13 +19,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Configure Google Auth Provider
+// Configure Google Auth Provider with better parameters
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  // Add your Replit domain to allowed domains
-  auth_domain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  // For OAuth redirect to work properly
-  redirect_uri: window.location.origin + '/auth'
+  // Enable login_hint for better user experience
+  login_hint: localStorage.getItem('last_email') || undefined
 });
 
 export default app;

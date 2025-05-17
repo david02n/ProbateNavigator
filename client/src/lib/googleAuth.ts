@@ -1,12 +1,11 @@
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithPopup, browserSessionPersistence, setPersistence } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithPopup, browserSessionPersistence, setPersistence } from 'firebase/auth';
 import { apiRequest } from './queryClient';
-import FirebaseApp from './firebase';
+import { auth } from './firebase';
 
-// Initialize auth and provider
-const auth = getAuth(FirebaseApp);
+// Initialize provider
 const provider = new GoogleAuthProvider();
 
-// Set persistence to browser session
+// Set persistence to browser session for Firebase auth
 setPersistence(auth, browserSessionPersistence)
   .catch((error) => {
     console.error("Error setting auth persistence:", error);
@@ -27,6 +26,11 @@ class GoogleAuthError extends Error {
 const getReturnUrl = (): string => {
   const origin = window.location.origin;
   const hostname = window.location.hostname;
+  
+  // For production domain, ensure we use the proper origin
+  if (hostname === 'probateswift.com' || hostname.endsWith('.probateswift.com')) {
+    return `https://${hostname}/auth?authReturn=true`;
+  }
   
   // Add state parameter to help identify return from auth
   return `${origin}/auth?authReturn=true`;

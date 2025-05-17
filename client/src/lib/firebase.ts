@@ -1,9 +1,27 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 
+// Log environment for debugging
+console.log('Current domain:', window.location.hostname);
+console.log('Full host:', window.location.host);
+console.log('Full URL:', window.location.href);
+
+// Determine the appropriate authDomain based on environment
+let authDomain = `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`;
+
+// For production domain, we need to use probateswift.com as the authDomain
+// This is critical for Firebase auth to work properly in production
+const isProductionDomain = window.location.hostname === 'probateswift.com' || 
+                           window.location.hostname.endsWith('.probateswift.com');
+
+if (isProductionDomain) {
+  // For production, use the actual domain
+  authDomain = 'probateswift.com';
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  authDomain: authDomain,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,

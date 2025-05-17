@@ -1,0 +1,149 @@
+Here’s the full “Add Person” feature spec—including the three entry modes, partial‐save behavior, executor conditional logic, and detailed postcode‐lookup API integration—built on top of your existing form fields:
+
+1. Entry Modes & Self-Suggestion
+A. Self-Suggest “Add Yourself”
+When: Opening the “Add Person” flow, if the logged-in user isn’t yet in the case’s people list.
+
+UI: Banner at top:
+
+“It looks like you’re involved in this case. Add yourself?”
+
+Add Yourself button: pre-fills all fields from the user’s profile (users table).
+
+Do not show again link: dismisses this suggestion (store a per-case flag).
+
+B. Import from Document
+Tab/button: “Import from Document”
+
+UI: List parsed people from OCR/webhook metadata (e.g. name, DOB).
+
+Flow: Select one → auto-fill all form fields → review/edit → save.
+
+C. Manual Entry
+Tab/button: “Enter Manually”
+
+UI: Blank form, full manual input with inline validation.
+
+2. Form Fields (unchanged labels) & Partial-Save Rules
+All fields map to your applicants table columns:
+
+Field	Key	Required?	Notes
+Title	title	Optional	
+First name(s) *	first_names	Required for “Complete”; Partial-save allowed	
+Middle name(s)	middle_names	Optional	
+Last name *	last_name	Required for “Complete”; Partial-save allowed	
+Building and street *	address_line1	Required for “Complete”; Partial-save allowed	
+Second line of address	address_line2	Optional	
+Town or city *	city	Required for “Complete”; Partial-save allowed	
+County	county	Optional	
+Postcode *	postcode	Required for “Complete”; Partial-save allowed	
+Home telephone number	phone_home	Optional	
+Mobile or work telephone	phone_mobile	Optional	
+Email address	email	Optional	
+Relationship to the deceased	relationship	Optional	
+Serve as an executor 🔲	executor	Conditional (has_will)	Only shown if the case’s has_will = TRUE.
+Primary Applicant 🔲	is_applicant	Optional	
+Notifying Only 🔔	is_notifying	Optional	
+
+Save always allowed.
+
+If any “*” fields are blank on save, set the person’s status = 'needs_more_info'.
+
+If all “*” fields are filled, status = 'pending' (or your standard workflow state).
+
+3. Conditional Will-Fields
+Executor checkbox appears only when probate_cases.has_will = TRUE.
+
+If checked, reveal:
+
+Is your name different in the will? (name_diff_will boolean)
+
+Alternative name in will (alt_name_will text)
+
+4. Postcode-Lookup Integration
+4.1 UI Placement
+Postcode field sits at top of address section.
+
+“Find Address” button immediately beside it.
+
+Below the populated address fields, show an “Edit address manually” link.
+
+4.2 Autocomplete API Call
+http
+Copy
+GET https://api.getAddress.io/autocomplete/{term}?api-key=YOUR_API_KEY
+{term} = user’s input (usually the postcode).
+
+Optional JSON body (for POST) to filter/bias:
+
+json
+Copy
+{
+  "filter": { "town_or_city": "London" },
+  "location": { "latitude": 51.5, "longitude": -0.12 }
+}
+Response:
+
+json
+Copy
+{
+  "suggestions": [
+    { "address": "10 Watkin Terrace, Northampton", "id": "XYZ123" },
+    …
+  ]
+}
+4.3 Full-Address Fetch
+http
+Copy
+GET https://api.getAddress.io/get/{id}?api-key=YOUR_API_KEY
+{id} from the selected suggestion.
+
+Response:
+
+json
+Copy
+{
+  "postcode": "NN1 3ER",
+  "line_1": "10 Watkin Terrace",
+  "line_2": "",
+  "town_or_city": "Northampton",
+  "county": "Northamptonshire",
+  …
+}
+4.4 Field Mapping
+Form Field	API Field
+Postcode	postcode
+Building and street	line_1
+Second line of address	line_2
+Town or city	town_or_city
+County	county
+
+Manual override: “Edit address manually” unlocks all address inputs for free-text.
+
+5. Self-Suggestion Dismissal
+Store a flag (e.g. case_settings.dismiss_self_suggestion) when user clicks “Do not show again.”
+
+Next time they open “Add Person,” do not show the banner.
+
+6. Implementation Checklist
+Front-End
+Tabs/banner for the three modes; dismissible self-suggestion.
+
+Inline postcode lookup & dropdown.
+
+“Edit address manually” toggle.
+
+Partial-save logic with “Needs more info” badge.
+
+Conditional executor fields.
+
+Back-End / API
+Ensure applicants table has all mapped columns and status supports 'needs_more_info'.
+
+Proxy or client-side calls to getAddress.io with your API key.
+
+Persist self-suggestion dismissal flag.
+
+On save, evaluate blank “*” fields and assign status accordingly.
+
+This unified spec makes adding people fast and flexible, leverages address‐lookup to reduce typing, and keeps your data consistent while always letting users override any auto-populated values.

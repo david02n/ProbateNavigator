@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import NewHeader from "@/components/layout/NewHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,8 +13,14 @@ import {
   Users,
   Loader2,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  AlertCircle,
+  MapPin,
+  Search,
+  X,
+  ArrowRight
 } from "lucide-react";
+import axios from "axios";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { Executor, ProbateCase } from "@shared/schema";
@@ -341,6 +347,17 @@ const PeoplePage: React.FC = () => {
   const onSubmit = (data: ExecutorFormValues) => {
     if (!activeCaseId) return;
     
+    // Check if all required fields are filled
+    const requiredFieldsFilled = 
+      !!data.firstName && 
+      !!data.lastName && 
+      !!data.addressLine1 && 
+      !!data.city && 
+      !!data.postCode;
+      
+    // Set status based on required fields
+    const status = requiredFieldsFilled ? 'complete' : 'needs_more_info';
+    
     // Prepare data with new fields
     const executorData = {
       caseId: activeCaseId,
@@ -363,6 +380,7 @@ const PeoplePage: React.FC = () => {
       isExecutor: data.isExecutor,
       isApplicant: data.isApplicant,
       isNotifying: data.isNotifying,
+      status: status,
       // Legacy fields for backward compatibility
       address: data.addressLine1 || null,
       phone: data.phoneMobile || data.phoneHome || null,

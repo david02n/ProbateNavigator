@@ -2114,12 +2114,13 @@ const PeoplePage: React.FC = () => {
                           }
                           
                           // If we have extracted data, create a person with it
-                          if (!personAlreadyCreated && extractedData && extractedData.person) {
+                          if (!personAlreadyCreated && extractedData) {
+                            // Check if we have the nested structure or the new flat structure
+                            const isNestedFormat = !!extractedData.person;
+                            
                             const personData: any = {
                               caseId: activeCaseId,
                               userId: user?.id,
-                              firstName: extractedData.person.firstName || "Deceased",
-                              lastName: extractedData.person.surname || extractedData.person.lastName || "Person",
                               isExecutor: false,
                               isApplicant: false,
                               needsMoreInfo: true,
@@ -2127,38 +2128,81 @@ const PeoplePage: React.FC = () => {
                               documentId: latestCert.id
                             };
                             
-                            // Add middle names if present
-                            if (extractedData.person.middleNames) {
-                              personData.middleNames = extractedData.person.middleNames;
-                            }
-                            
-                            // Add dates if present
-                            if (extractedData.person.dateOfBirth) {
-                              personData.dateOfBirth = extractedData.person.dateOfBirth;
-                            }
-                            
-                            if (extractedData.person.dateOfDeath) {
-                              personData.dateOfDeath = extractedData.person.dateOfDeath;
-                            }
-                            
-                            // Add address if present
-                            if (extractedData.person.address) {
-                              if (extractedData.person.address.street) {
-                                personData.addressLine1 = extractedData.person.address.street;
+                            // Handle both nested and flat formats
+                            if (isNestedFormat) {
+                              // Nested format (old structure)
+                              personData.firstName = extractedData.person.firstName || "Deceased";
+                              personData.lastName = extractedData.person.surname || extractedData.person.lastName || "Person";
+                              
+                              // Add middle names if present
+                              if (extractedData.person.middleNames) {
+                                personData.middleNames = extractedData.person.middleNames;
                               }
                               
-                              if (extractedData.person.address.city) {
-                                personData.city = extractedData.person.address.city;
+                              // Add dates if present
+                              if (extractedData.person.dateOfBirth) {
+                                personData.dateOfBirth = extractedData.person.dateOfBirth;
                               }
                               
-                              if (extractedData.person.address.postcode) {
-                                personData.postCode = extractedData.person.address.postcode;
+                              if (extractedData.person.dateOfDeath) {
+                                personData.dateOfDeath = extractedData.person.dateOfDeath;
                               }
-                            }
-                            
-                            // Add place of death if present
-                            if (extractedData.registration && extractedData.registration.placeOfDeath) {
-                              personData.placeOfDeath = extractedData.registration.placeOfDeath;
+                              
+                              // Add address if present
+                              if (extractedData.person.address) {
+                                if (extractedData.person.address.street) {
+                                  personData.addressLine1 = extractedData.person.address.street;
+                                }
+                                
+                                if (extractedData.person.address.city) {
+                                  personData.city = extractedData.person.address.city;
+                                }
+                                
+                                if (extractedData.person.address.postcode) {
+                                  personData.postCode = extractedData.person.address.postcode;
+                                }
+                              }
+                              
+                              // Add place of death if present
+                              if (extractedData.registration && extractedData.registration.placeOfDeath) {
+                                personData.placeOfDeath = extractedData.registration.placeOfDeath;
+                              }
+                            } else {
+                              // Flat format (new structure)
+                              personData.firstName = extractedData.firstName || "Deceased";
+                              personData.lastName = extractedData.surname || "Person";
+                              
+                              // Add middle names if present
+                              if (extractedData.middleName) {
+                                personData.middleNames = extractedData.middleName;
+                              }
+                              
+                              // Add dates if present
+                              if (extractedData.dateOfBirth) {
+                                personData.dateOfBirth = extractedData.dateOfBirth;
+                              }
+                              
+                              if (extractedData.dateOfDeath) {
+                                personData.dateOfDeath = extractedData.dateOfDeath;
+                              }
+                              
+                              // Add address if present 
+                              if (extractedData.street) {
+                                personData.addressLine1 = extractedData.street;
+                              }
+                              
+                              if (extractedData.city) {
+                                personData.city = extractedData.city;
+                              }
+                              
+                              if (extractedData.postcode) {
+                                personData.postCode = extractedData.postcode;
+                              }
+                              
+                              // Add application number if present
+                              if (extractedData.applicationNumber) {
+                                personData.notes = `Application Number: ${extractedData.applicationNumber}`;
+                              }
                             }
                             
                             // Create the person from document data

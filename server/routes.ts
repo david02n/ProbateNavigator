@@ -1380,7 +1380,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         console.log(`Fetching addresses for postcode: ${postcode}`);
-        const response = await axios.get(`https://api.getAddress.io/find/${encodeURIComponent(postcode)}?api-key=${apiKey}`);
+        // Use the correct API endpoint according to GetAddress.io documentation
+        const formattedPostcode = postcode.replace(/\s+/g, '');
+        console.log(`API Request to GetAddress.io for postcode: ${formattedPostcode}`);
+        const response = await axios.get(`https://api.getaddress.io/find/${encodeURIComponent(formattedPostcode)}?api-key=${apiKey}&expand=true`);
         console.log('Successfully received address data from GetAddress.io');
         return res.json(response.data);
       } catch (apiError: any) {

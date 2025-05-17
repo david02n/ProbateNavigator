@@ -74,6 +74,7 @@ interface ProcessedExecutor extends Executor {
 interface PostcodeLookupSuggestion {
   id: string;
   address: string;
+  rawAddress?: any; // To store the full address object when available
 }
 
 interface PostcodeLookupResult {
@@ -239,11 +240,39 @@ const PeoplePage: React.FC = () => {
         return;
       }
       
-      // Format addresses from response (GetAddress.io returns an array of strings)
-      const suggestions: PostcodeLookupSuggestion[] = data.addresses.map((address: string, index: number) => ({
-        id: `${postcode}-${index}`,
-        address: address ? `${address}, ${postcode}` : postcode
-      }));
+      // GetAddress.io can return addresses in different formats based on the query parameters
+      let suggestions: PostcodeLookupSuggestion[] = [];
+      
+      // Check if we have the expanded format that includes formatted address objects
+      if (data.addresses && Array.isArray(data.addresses)) {
+        if (data.addresses.length > 0 && typeof data.addresses[0] === 'object') {
+          // Handle expanded format
+          suggestions = data.addresses.map((address: any, index: number) => {
+            // Build a formatted address string
+            const formattedAddress = [
+              address.formatted_address?.line_1,
+              address.formatted_address?.line_2,
+              address.formatted_address?.locality,
+              address.formatted_address?.town_or_city,
+              address.formatted_address?.county
+            ].filter(Boolean).join(', ');
+            
+            return {
+              id: `${postcode}-${index}`,
+              address: formattedAddress ? `${formattedAddress}, ${postcode}` : postcode,
+              rawAddress: address
+            };
+          });
+        } else {
+          // Handle simple format (array of strings)
+          suggestions = data.addresses.map((address: string, index: number) => ({
+            id: `${postcode}-${index}`,
+            address: address ? `${address}, ${postcode}` : postcode
+          }));
+        }
+      }
+      
+      console.log("Processed address suggestions:", suggestions);
       
       setAddressSuggestions(suggestions);
       toast({

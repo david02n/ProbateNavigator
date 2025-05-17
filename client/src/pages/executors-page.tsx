@@ -84,7 +84,7 @@ const PeoplePage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   // State to track modal open state
-  const [isExecutorModalOpen, setIsExecutorModalOpen] = useState(false);
+  const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   // State to track if we are adding a legal professional
   const [isLegalProfessional, setIsLegalProfessional] = useState(false);
   // State to track if we are editing an executor
@@ -673,8 +673,8 @@ const PeoplePage: React.FC = () => {
           </Card>
           
           {/* Add Person Modal */}
-          <Dialog open={isExecutorModalOpen} onOpenChange={(open) => {
-            setIsExecutorModalOpen(open);
+          <Dialog open={isPersonModalOpen} onOpenChange={(open) => {
+            setIsPersonModalOpen(open);
             if (!open) {
               // Reset editing state when dialog is closed
               setIsEditing(false);

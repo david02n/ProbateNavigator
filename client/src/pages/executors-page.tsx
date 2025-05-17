@@ -172,7 +172,7 @@ const PeoplePage: React.FC = () => {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error updating executor",
+        title: "Error updating person",
         description: error.message,
         variant: "destructive",
       });
@@ -544,7 +544,7 @@ const PeoplePage: React.FC = () => {
                         Adding...
                       </>
                     ) : (
-                      "Add Executor"
+                      "Add Person"
                     )}
                   </Button>
                 </div>
@@ -906,7 +906,7 @@ const PeoplePage: React.FC = () => {
                           Saving...
                         </>
                       ) : (
-                        isEditing ? "Update Executor" : "Save Executor"
+                        isEditing ? "Update Person" : "Save Person"
                       )}
                     </Button>
                   </DialogFooter>
@@ -921,7 +921,7 @@ const PeoplePage: React.FC = () => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently remove the executor from the estate.
+                  This action cannot be undone. This will permanently remove the person from the estate.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -937,7 +937,7 @@ const PeoplePage: React.FC = () => {
                       Deleting...
                     </>
                   ) : (
-                    "Delete Executor"
+                    "Delete Person"
                   )}
                 </AlertDialogAction>
               </AlertDialogFooter>

@@ -347,8 +347,37 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
           if (content.includes('```json')) {
             const jsonMatch = content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
             if (jsonMatch && jsonMatch[1]) {
-              extractedData = JSON.parse(jsonMatch[1]);
-              console.log("Extracted data from array with JSON code block:", extractedData);
+              const parsedData = JSON.parse(jsonMatch[1]);
+              console.log("Extracted data from array with JSON code block:", parsedData);
+              
+              // Process nested structure for death certificates
+              if (parsedData.person) {
+                extractedData = {
+                  ...parsedData,
+                  firstName: parsedData.person.firstName,
+                  middleName: parsedData.person.middleName || parsedData.person.middleNames,
+                  surname: parsedData.person.surname,
+                  dateOfBirth: parsedData.person.dateOfBirth,
+                  dateOfDeath: parsedData.person.dateOfDeath
+                };
+                
+                // Format address if present
+                if (parsedData.person.address) {
+                  const addressParts = [];
+                  if (parsedData.person.address.street) addressParts.push(parsedData.person.address.street);
+                  if (parsedData.person.address.city) addressParts.push(parsedData.person.address.city);
+                  if (parsedData.person.address.postcode) addressParts.push(parsedData.person.address.postcode);
+                  extractedData.address = addressParts.join(', ');
+                }
+                
+                // Add registration details if present
+                if (parsedData.registration) {
+                  extractedData.applicationNumber = parsedData.registration.applicationNumber;
+                  extractedData.placeOfDeath = parsedData.registration.placeOfDeath;
+                }
+              } else {
+                extractedData = parsedData;
+              }
             }
           }
         } 
@@ -358,8 +387,37 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }) => {
           if (content.includes('```json')) {
             const jsonMatch = content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
             if (jsonMatch && jsonMatch[1]) {
-              extractedData = JSON.parse(jsonMatch[1]);
-              console.log("Extracted data from webhookResponse:", extractedData);
+              const parsedData = JSON.parse(jsonMatch[1]);
+              console.log("Extracted data from webhookResponse:", parsedData);
+              
+              // Process nested structure for death certificates
+              if (parsedData.person) {
+                extractedData = {
+                  ...parsedData,
+                  firstName: parsedData.person.firstName,
+                  middleName: parsedData.person.middleName || parsedData.person.middleNames,
+                  surname: parsedData.person.surname,
+                  dateOfBirth: parsedData.person.dateOfBirth,
+                  dateOfDeath: parsedData.person.dateOfDeath
+                };
+                
+                // Format address if present
+                if (parsedData.person.address) {
+                  const addressParts = [];
+                  if (parsedData.person.address.street) addressParts.push(parsedData.person.address.street);
+                  if (parsedData.person.address.city) addressParts.push(parsedData.person.address.city);
+                  if (parsedData.person.address.postcode) addressParts.push(parsedData.person.address.postcode);
+                  extractedData.address = addressParts.join(', ');
+                }
+                
+                // Add registration details if present
+                if (parsedData.registration) {
+                  extractedData.applicationNumber = parsedData.registration.applicationNumber;
+                  extractedData.placeOfDeath = parsedData.registration.placeOfDeath;
+                }
+              } else {
+                extractedData = parsedData;
+              }
             }
           }
         }

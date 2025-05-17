@@ -67,23 +67,44 @@ export const CreateFromDeathCertificate: React.FC<CreateFromDeathCertificateProp
         return null;
       }
       
+      console.log("Processing document notes:", document.notes);
+      
       // Try to parse the notes as JSON
       const notesObj = JSON.parse(document.notes);
       
-      // Check if there's a webhookResponse with content
+      // Handle different formats of the data
+      
+      // Format 1: Direct object with fields
+      if (notesObj.firstName || notesObj.surname || notesObj.type === "Death Certificate") {
+        console.log("Found direct JSON format with fields");
+        return notesObj;
+      }
+      
+      // Format 2: Nested under webhookResponse.content
       if (notesObj && notesObj.webhookResponse && notesObj.webhookResponse.content) {
+        console.log("Found nested webhookResponse.content format");
+        
         // Try to extract JSON from markdown code block
         const match = notesObj.webhookResponse.content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
         if (match && match[1]) {
           return JSON.parse(match[1]);
         }
         
-        // Try direct parsing of content if not in markdown format
+        // Try direct parsing of content if it's a JSON string
         try {
-          return JSON.parse(notesObj.webhookResponse.content);
+          const contentObj = JSON.parse(notesObj.webhookResponse.content);
+          console.log("Parsed webhookResponse content as direct JSON:", contentObj);
+          return contentObj;
         } catch (e) {
           console.error('Error parsing content as JSON:', e);
         }
+      }
+      
+      // Format 3: Generic fields in the notes object
+      // Check if there are any usable fields directly in the notes object
+      if (notesObj.documentType === "death_certificate" && notesObj.message) {
+        console.log("Found generic format with document type");
+        return notesObj;
       }
       
       return notesObj;
@@ -113,29 +134,93 @@ export const CreateFromDeathCertificate: React.FC<CreateFromDeathCertificateProp
     let firstName = '';
     let middleNames = '';
     
-    if (extractedData.firstName) {
-      const nameParts = extractedData.firstName.trim().split(/\s+/);
+    // Get the actual data, which might be nested in webhookResponse.content
+    const personData = extractedData.type === "Death Certificate" ? 
+      extractedData : 
+      (extractedData.webhookResponse?.content ? JSON.parse(extractedData.webhookResponse.content) : extractedData);
+    
+    // Try to get first name from any possible location in the data structure
+    const rawFirstName = personData.firstName || 
+                         personData.first_name || 
+                         personData.firstname || 
+                         personData.givenName || 
+                         '';
+    
+    if (rawFirstName) {
+      const nameParts = rawFirstName.trim().split(/\s+/);
       firstName = nameParts[0];
       if (nameParts.length > 1) {
-        middleNames = nameParts.slice(1).join(' ');
+        // If middleName is explicitly provided, use that instead of splitting
+        if (!personData.middleName && !personData.middle_name) {
+          middleNames = nameParts.slice(1).join(' ');
+        }
       }
     }
+    
+    // Try to get middle name from any possible field name
+    const rawMiddleName = personData.middleName || 
+                          personData.middle_name || 
+                          personData.middlenames || 
+                          middleNames || 
+                          '';
+    
+    // Try to get last name from any possible field name
+    const rawLastName = personData.lastName || 
+                        personData.last_name || 
+                        personData.lastname || 
+                        personData.surname || 
+                        personData.familyName || 
+                        'Unknown';
+    
+    // Get address details from any possible field names
+    const street = personData.street || 
+                   personData.addressLine1 || 
+                   personData.address_line_1 || 
+                   personData.address || 
+                   '';
+                   
+    const city = personData.city || 
+                 personData.town_or_city || 
+                 personData.town || 
+                 '';
+                 
+    const county = personData.county || 
+                   personData.region || 
+                   personData.state || 
+                   '';
+                   
+    const postcode = personData.postcode || 
+                     personData.postCode || 
+                     personData.post_code || 
+                     personData.postal_code || 
+                     personData.zip || 
+                     '';
+    
+    console.log("Creating person with extracted data:", {
+      firstName,
+      middleNames: rawMiddleName,
+      lastName: rawLastName,
+      street,
+      city,
+      county,
+      postcode
+    });
     
     // Create person from extracted data
     createPersonMutation.mutate({
       caseId,
       userId,
-      firstName: firstName || extractedData.firstName || 'Unknown',
-      middleNames: middleNames,
-      lastName: extractedData.surname || extractedData.lastName || 'Unknown',
-      addressLine1: extractedData.address || '',
-      city: extractedData.city || '',
-      county: extractedData.county || '',
-      postCode: extractedData.postcode || extractedData.postCode || '',
+      firstName: firstName || 'Unknown',
+      middleNames: rawMiddleName,
+      lastName: rawLastName,
+      addressLine1: street,
+      city: city,
+      county: county,
+      postCode: postcode,
       isExecutor: false,
       isApplicant: false,
       isNotifying: false,
-      needsMoreInfo: true,
+      needsMoreInfo: true, // Always mark as needing more info for manual verification
       relationshipToDeceased: 'Deceased',
       documentId: selectedDocument.id,
     });
@@ -193,24 +278,84 @@ export const CreateFromDeathCertificate: React.FC<CreateFromDeathCertificateProp
                     <h3 className="font-medium text-md mb-2">Extracted Information</h3>
                     <div className="bg-gray-50 p-4 rounded-md text-sm">
                       <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <span className="font-medium">Name:</span> {extractedData.firstName} {extractedData.surname || extractedData.lastName}
-                        </div>
-                        {extractedData.dateOfBirth && (
-                          <div>
-                            <span className="font-medium">Date of Birth:</span> {extractedData.dateOfBirth}
-                          </div>
-                        )}
-                        {extractedData.dateOfDeath && (
-                          <div>
-                            <span className="font-medium">Date of Death:</span> {extractedData.dateOfDeath}
-                          </div>
-                        )}
-                        {extractedData.address && (
-                          <div>
-                            <span className="font-medium">Address:</span> {extractedData.address}
-                          </div>
-                        )}
+                        {/* Get data from any possible location in the structure */}
+                        {(() => {
+                          // Determine the actual data object, which might be nested
+                          const personData = extractedData.type === "Death Certificate" ? 
+                            extractedData : 
+                            (extractedData.webhookResponse?.content ? 
+                              (typeof extractedData.webhookResponse.content === 'string' ? 
+                                JSON.parse(extractedData.webhookResponse.content) : 
+                                extractedData.webhookResponse.content) : 
+                              extractedData);
+                          
+                          // Find all name parts
+                          const firstName = personData.firstName || personData.first_name || personData.firstname || '';
+                          const middleName = personData.middleName || personData.middle_name || personData.middlenames || '';
+                          const lastName = personData.lastName || personData.last_name || personData.lastname || personData.surname || '';
+                          
+                          // Find address components
+                          const street = personData.street || personData.addressLine1 || personData.address_line_1 || personData.address || '';
+                          const city = personData.city || personData.town_or_city || personData.town || '';
+                          const county = personData.county || personData.region || personData.state || '';
+                          const postcode = personData.postcode || personData.postCode || personData.post_code || '';
+                          
+                          // Find dates
+                          const dob = personData.dateOfBirth || personData.date_of_birth || personData.birthDate || '';
+                          const dod = personData.dateOfDeath || personData.date_of_death || personData.deathDate || '';
+                          
+                          // Return the data presentation
+                          return (
+                            <>
+                              <div>
+                                <span className="font-medium">Name:</span> {firstName} {middleName} {lastName}
+                              </div>
+                              
+                              {dob && (
+                                <div>
+                                  <span className="font-medium">Date of Birth:</span> {dob}
+                                </div>
+                              )}
+                              
+                              {dod && (
+                                <div>
+                                  <span className="font-medium">Date of Death:</span> {dod}
+                                </div>
+                              )}
+                              
+                              {street && (
+                                <div>
+                                  <span className="font-medium">Address:</span> {street}
+                                </div>
+                              )}
+                              
+                              {city && (
+                                <div>
+                                  <span className="font-medium">City:</span> {city}
+                                </div>
+                              )}
+                              
+                              {county && (
+                                <div>
+                                  <span className="font-medium">County:</span> {county}
+                                </div>
+                              )}
+                              
+                              {postcode && (
+                                <div>
+                                  <span className="font-medium">Postcode:</span> {postcode}
+                                </div>
+                              )}
+                              
+                              {/* Additional information that might be available */}
+                              {personData.applicationNumber && (
+                                <div>
+                                  <span className="font-medium">Application Number:</span> {personData.applicationNumber}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

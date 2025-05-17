@@ -2067,11 +2067,13 @@ const PeoplePage: React.FC = () => {
                       }
                     }
                     
-                    // For other document types or if death certificate processing failed
-                    toast({
-                      title: "Document Processed",
-                      description: `Person details extracted from ${selectedDocumentType?.replace('_', ' ')}`,
-                    });
+                    // Only show this toast if we didn't process the document earlier
+                    if (!selectedDocumentType) {
+                      toast({
+                        title: "Document Type Required",
+                        description: "Please select a document type",
+                      });
+                    }
                     
                     // Pre-fill a new person form with some default values based on document type
                     const newPerson = {

@@ -433,7 +433,7 @@ const NewDashboardPage: React.FC = () => {
                               <Button 
                                 size="sm" 
                                 className="text-xs h-7 bg-[#002B49] hover:bg-[#002B49]/90"
-                                onClick={() => activeCase ? navigate("/executors") : toast({ 
+                                onClick={() => activeCase ? navigate("/people") : toast({ 
                                   title: "Assessment Required",
                                   description: "Please complete the assessment first to create a probate case.",
                                   variant: "destructive"

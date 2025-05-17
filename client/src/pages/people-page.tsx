@@ -64,7 +64,7 @@ interface ProcessedExecutor extends Executor {
   isLegalProfessional?: boolean;
 }
 
-// Create the form schema for adding an executor
+// Create the form schema for adding a person
 const executorFormSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required" }),
   lastName: z.string().min(1, { message: "Last name is required" }),
@@ -87,13 +87,13 @@ const PeoplePage: React.FC = () => {
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   // State to track if we are adding a legal professional
   const [isLegalProfessional, setIsLegalProfessional] = useState(false);
-  // State to track if we are editing an executor
+  // State to track if we are editing a person
   const [isEditing, setIsEditing] = useState(false);
-  // State to store the executor being edited
+  // State to store the person being edited
   const [currentExecutor, setCurrentExecutor] = useState<Executor | null>(null);
   // State for delete confirmation dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  // State to store the executor ID to delete
+  // State to store the person ID to delete
   const [executorToDelete, setExecutorToDelete] = useState<number | null>(null);
   
   // Initialize form with validation
@@ -125,7 +125,7 @@ const PeoplePage: React.FC = () => {
   // Get the active case ID (first case for now, could be selected by user later)
   const activeCaseId = probateCases && probateCases.length > 0 ? probateCases[0].id : undefined;
   
-  // Get executors for the active case
+  // Get people for the active case
   const { 
     data: executors = [],
     isLoading: isLoadingExecutors 
@@ -135,7 +135,7 @@ const PeoplePage: React.FC = () => {
     enabled: !!activeCaseId,
   });
   
-  // Create executor mutation
+  // Create person mutation
   const createExecutorMutation = useMutation({
     mutationFn: async (executorData: Partial<Executor>) => {
       const res = await apiRequest("POST", "/api/executors", executorData);
@@ -157,7 +157,7 @@ const PeoplePage: React.FC = () => {
     },
   });
   
-  // Update executor mutation
+  // Update person mutation
   const updateExecutorMutation = useMutation({
     mutationFn: async ({ id, executorData }: { id: number, executorData: Partial<Executor> }) => {
       const res = await apiRequest("PUT", `/api/executors/${id}`, executorData);
@@ -179,7 +179,7 @@ const PeoplePage: React.FC = () => {
     },
   });
   
-  // Delete executor mutation
+  // Delete person mutation
   const deleteExecutorMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/executors/${id}`);
@@ -188,24 +188,24 @@ const PeoplePage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/executors"] });
       toast({
-        title: "Executor deleted",
-        description: "The executor has been removed successfully",
+        title: "Person deleted",
+        description: "The person has been removed successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error deleting executor",
+        title: "Error deleting person",
         description: error.message,
         variant: "destructive",
       });
     },
   });
   
-  // Process executors to identify primary executors
+  // Process people to identify primary applicants
   const processedExecutors: ProcessedExecutor[] = executors.map((executor, index) => {
     return {
       ...executor,
-      isPrimary: executor.isApplicant || index === 0, // First executor is primary if none marked as applicant
+      isPrimary: executor.isApplicant || index === 0, // First person is primary if none marked as applicant
       isLegalProfessional: executor.relationshipToDeceased === "Legal Professional"
     };
   });
@@ -214,7 +214,7 @@ const PeoplePage: React.FC = () => {
   const professionals = processedExecutors.filter(exec => exec.isLegalProfessional);
   const regularExecutors = processedExecutors.filter(exec => !exec.isLegalProfessional);
   
-  // Handle opening executor form
+  // Handle opening person form
   const handleAddPerson = () => {
     if (!activeCaseId) {
       toast({
@@ -235,7 +235,7 @@ const PeoplePage: React.FC = () => {
       city: "",
       postCode: "",
       relationshipToDeceased: "",
-      isApplicant: regularExecutors.length === 0, // Make first executor the applicant if none exist
+      isApplicant: regularExecutors.length === 0, // Make first person the applicant if none exist
       isNotifying: false,
     });
     
@@ -274,13 +274,13 @@ const PeoplePage: React.FC = () => {
     setIsPersonModalOpen(true);
   };
   
-  // Handler for editing an executor
+  // Handler for editing a person
   const handleEditPerson = (executor: Executor) => {
     setCurrentExecutor(executor);
     setIsEditing(true);
     setIsLegalProfessional(executor.relationshipToDeceased === "Legal Professional");
     
-    // Populate form with executor data
+    // Populate form with person data
     form.reset({
       firstName: executor.firstName,
       lastName: executor.lastName,
@@ -297,7 +297,7 @@ const PeoplePage: React.FC = () => {
     setIsPersonModalOpen(true);
   };
   
-  // Handler for confirming executor deletion
+  // Handler for confirming person deletion
   const handleDeleteExecutor = (executorId: number) => {
     setExecutorToDelete(executorId);
     setIsDeleteDialogOpen(true);
@@ -335,7 +335,7 @@ const PeoplePage: React.FC = () => {
     };
     
     if (isEditing && currentExecutor) {
-      // Update existing executor
+      // Update existing person
       updateExecutorMutation.mutate(
         { 
           id: currentExecutor.id, 
@@ -351,7 +351,7 @@ const PeoplePage: React.FC = () => {
         }
       );
     } else {
-      // Create new executor
+      // Create new person
       createExecutorMutation.mutate(executorData, {
         onSuccess: () => {
           setIsPersonModalOpen(false);
@@ -513,7 +513,7 @@ const PeoplePage: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Add Executor Button */}
+                {/* Add Person Button */}
                 <div 
                   className="border rounded-lg border-dashed p-5 text-center hover:bg-gray-50 transition cursor-pointer"
                   onClick={() => {
@@ -560,30 +560,25 @@ const PeoplePage: React.FC = () => {
                 Legal Professionals
               </CardTitle>
               <CardDescription>
-                Solicitors or legal representatives assisting with the probate process
+                Solicitors and professionals assisting with the probate process
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {professionals.length > 0 ? (
-                <div className="space-y-4">
-                  {professionals.map((professional) => (
+              <div className="space-y-6">
+                {professionals.length > 0 ? (
+                  professionals.map((professional) => (
                     <div key={professional.id} className="border rounded-lg p-5">
                       <div className="flex justify-between">
                         <div className="flex items-start">
-                          <div className="rounded-full w-10 h-10 bg-blue-100 flex items-center justify-center mr-4 text-blue-700">
-                            <Briefcase className="h-5 w-5" />
+                          <div className="rounded-full w-10 h-10 bg-blue-100 flex items-center justify-center mr-4">
+                            <Briefcase className="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <div className="flex items-center">
-                              <h3 className="font-medium text-lg">
-                                {professional.firstName} {professional.lastName}
-                              </h3>
-                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                                Legal Professional
-                              </span>
-                            </div>
+                            <h3 className="font-medium text-lg">
+                              {professional.firstName} {professional.lastName}
+                            </h3>
                             <p className="text-gray-500 text-sm mt-1">
-                              Solicitor
+                              {professional.relationshipToDeceased}
                             </p>
                           </div>
                         </div>
@@ -631,27 +626,22 @@ const PeoplePage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <p>No legal professionals have been added yet.</p>
+                  </div>
+                )}
+                
+                {/* Add Legal Professional Button */}
                 <div 
                   className="border rounded-lg border-dashed p-5 text-center hover:bg-gray-50 transition cursor-pointer"
-                  onClick={() => {
-                    if (!activeCaseId) {
-                      toast({
-                        title: "No probate case",
-                        description: "Please create a probate case first",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    handleAddProfessional();
-                  }}
+                  onClick={handleAddProfessional}
                 >
-                  <Briefcase className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-600 mb-3">No legal professionals added yet</p>
+                  <Plus className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-gray-600 mb-3">Add a legal professional</p>
                   <Button 
-                    variant="outline"
+                    className="bg-primary hover:bg-primary/90" 
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent the parent div click
                       handleAddProfessional();
@@ -668,7 +658,7 @@ const PeoplePage: React.FC = () => {
                     )}
                   </Button>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
           
@@ -698,8 +688,7 @@ const PeoplePage: React.FC = () => {
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* First Name */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
                       control={form.control}
                       name="firstName"
@@ -714,7 +703,6 @@ const PeoplePage: React.FC = () => {
                       )}
                     />
                     
-                    {/* Last Name */}
                     <FormField
                       control={form.control}
                       name="lastName"
@@ -730,76 +718,29 @@ const PeoplePage: React.FC = () => {
                     />
                   </div>
                   
-                  {/* Email */}
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="Enter email address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Phone */}
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter phone number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Address */}
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* City */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
                       control={form.control}
-                      name="city"
+                      name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter city" {...field} />
+                            <Input type="email" placeholder="Email address (optional)" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     
-                    {/* Post Code */}
                     <FormField
                       control={form.control}
-                      name="postCode"
+                      name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Post Code</FormLabel>
+                          <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter post code" {...field} />
+                            <Input placeholder="Phone number (optional)" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -807,7 +748,50 @@ const PeoplePage: React.FC = () => {
                     />
                   </div>
                   
-                  {/* Relationship to Deceased */}
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Address (optional)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input placeholder="City (optional)" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="postCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Post Code</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Post code (optional)" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
                   {!isLegalProfessional && (
                     <FormField
                       control={form.control}
@@ -815,23 +799,20 @@ const PeoplePage: React.FC = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Relationship to Deceased</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select relationship" />
+                                <SelectValue placeholder="Select relationship to the deceased" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Spouse">Spouse</SelectItem>
+                              <SelectItem value="Spouse/Partner">Spouse/Partner</SelectItem>
                               <SelectItem value="Child">Child</SelectItem>
-                              <SelectItem value="Sibling">Sibling</SelectItem>
                               <SelectItem value="Parent">Parent</SelectItem>
-                              <SelectItem value="Grandchild">Grandchild</SelectItem>
-                              <SelectItem value="Other Family">Other Family</SelectItem>
+                              <SelectItem value="Sibling">Sibling</SelectItem>
+                              <SelectItem value="Other Family Member">Other Family Member</SelectItem>
                               <SelectItem value="Friend">Friend</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -840,34 +821,10 @@ const PeoplePage: React.FC = () => {
                     />
                   )}
                   
-                  {/* Checkboxes */}
-                  <div className="space-y-3">
-                    {!isLegalProfessional && (
-                      <FormField
-                        control={form.control}
-                        name="isApplicant"
-                        render={({ field }) => (
-                          <FormItem className="flex items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox 
-                                checked={field.value} 
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Primary Executor</FormLabel>
-                              <FormDescription>
-                                This person will be the main applicant for probate
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    )}
-                    
+                  {!isLegalProfessional && (
                     <FormField
                       control={form.control}
-                      name="isNotifying"
+                      name="isApplicant"
                       render={({ field }) => (
                         <FormItem className="flex items-start space-x-3 space-y-0">
                           <FormControl>
@@ -877,15 +834,36 @@ const PeoplePage: React.FC = () => {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel>Notifying Only</FormLabel>
+                            <FormLabel>Primary Applicant</FormLabel>
                             <FormDescription>
-                              This person will be notified but won't be actively involved in the probate process
+                              This person will be the main applicant for the probate application
                             </FormDescription>
                           </div>
                         </FormItem>
                       )}
                     />
-                  </div>
+                  )}
+                  
+                  <FormField
+                    control={form.control}
+                    name="isNotifying"
+                    render={({ field }) => (
+                      <FormItem className="flex items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value} 
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Notifying Only</FormLabel>
+                          <FormDescription>
+                            This person will be notified but won't be actively involved in the probate process
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                   
                   <DialogFooter>
                     <Button 

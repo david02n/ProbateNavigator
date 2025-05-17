@@ -10,7 +10,7 @@ import AuthPage from "@/pages/auth-page";
 
 // New redesigned pages
 import NewDashboardPage from "@/pages/new-dashboard";
-import PeoplePage from "@/pages/executors-page"; // Renamed from ExecutorsPage but file name kept the same
+import PeoplePage from "@/pages/people-page";
 import EstatePage from "@/pages/estate-page";
 import DocumentsPage from "@/pages/documents-page";
 import DocumentUploadPage from "@/pages/document-upload-page";

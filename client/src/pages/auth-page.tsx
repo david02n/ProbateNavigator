@@ -91,32 +91,31 @@ const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
     console.log('Mobile from URL param:', mobileParam);
     console.log('Auth return parameter:', authReturn);
     
-    // Handle Firebase authentication redirect result for iOS and other browsers
-    if (authReturn === 'true') {
-      console.log('Auth return detected, processing Firebase redirect');
-      // Process Firebase redirect result
-      (async () => {
-        try {
-          const result = await handleRedirectResult();
-          if (result) {
-            console.log('Firebase redirect processed successfully:', result);
-            // If we're on a mobile device, do a hard redirect to dashboard
-            if (isMobileDevice) {
-              console.log('Mobile device detected, redirecting to dashboard');
-              window.location.href = '/';
-            }
-          } else {
-            console.log('No redirect result from Firebase');
+    // Always check for Firebase authentication redirect result
+    // The Google auth might not set the authReturn parameter, so we should check for results regardless
+    console.log('Checking for Firebase redirect result');
+    // Process Firebase redirect result
+    (async () => {
+      try {
+        const result = await handleRedirectResult();
+        if (result) {
+          console.log('Firebase redirect processed successfully:', result);
+          // If we're on a mobile device, do a hard redirect to dashboard
+          if (isMobileDevice) {
+            console.log('Mobile device detected, redirecting to dashboard');
+            window.location.href = '/';
           }
-        } catch (error) {
-          console.error('Error handling Firebase redirect:', error);
-          // On iOS specifically, better error handling
-          if (isIOS) {
-            alert('There was a problem with the Google login. Please try again or use email/password.');
-          }
+        } else {
+          console.log('No redirect result from Firebase');
         }
-      })();
-    }
+      } catch (error) {
+        console.error('Error handling Firebase redirect:', error);
+        // On iOS specifically, better error handling
+        if (isIOS) {
+          alert('There was a problem with the Google login. Please try again or use email/password.');
+        }
+      }
+    })();
     
     // Set tab based on available data
     if (tabParam === 'register' || tabParam === 'login') {

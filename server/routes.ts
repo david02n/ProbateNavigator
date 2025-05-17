@@ -149,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user) {
         // Update existing user with Firebase details
         const updatedUser = await storage.updateUser(user.id, {
-          firebaseUid,
+          firebaseUid: firebaseUid || undefined,
           photoURL: photoURL || undefined,
           // Only update these if they don't exist already
           firstName: user.firstName || firstName || undefined,

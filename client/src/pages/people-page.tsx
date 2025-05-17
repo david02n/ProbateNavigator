@@ -70,6 +70,29 @@ interface ProcessedExecutor extends Executor {
   isLegalProfessional?: boolean;
 }
 
+// Interface for postcode lookup response
+interface PostcodeLookupSuggestion {
+  id: string;
+  address: string;
+}
+
+interface PostcodeLookupResult {
+  postcode: string;
+  line_1: string;
+  line_2: string;
+  town_or_city: string;
+  county: string;
+}
+
+// Type for address fields that will be filled from postcode lookup
+interface AddressFields {
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  county: string;
+  postCode: string;
+}
+
 // Create the form schema for adding a person
 const executorFormSchema = z.object({
   title: z.string().optional(),
@@ -113,6 +136,18 @@ const PeoplePage: React.FC = () => {
   // State to store the person ID to delete
   const [executorToDelete, setExecutorToDelete] = useState<number | null>(null);
   
+  // Postcode lookup states
+  const [postcodeQuery, setPostcodeQuery] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<PostcodeLookupSuggestion[]>([]);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [manualAddressEntry, setManualAddressEntry] = useState(false);
+  
+  // Self-suggestion state
+  const [showSelfSuggestion, setShowSelfSuggestion] = useState(false);
+  const [selfSuggestionDismissed, setSelfSuggestionDismissed] = useState(false);
+  
   // Initialize form with validation
   const form = useForm<ExecutorFormValues>({
     resolver: zodResolver(executorFormSchema),
@@ -140,6 +175,111 @@ const PeoplePage: React.FC = () => {
       phone: "",
     },
   });
+  
+  // Function to handle postcode lookup
+  const handlePostcodeLookup = async () => {
+    const postcode = form.getValues("postCode");
+    if (!postcode || postcode.length < 3) {
+      toast({
+        title: "Invalid postcode",
+        description: "Please enter a valid postcode to search for addresses",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoadingAddresses(true);
+    setShowAddressSuggestions(true);
+    
+    try {
+      // For demo purposes, using a mock API response
+      // In production, you would replace this with a real API call:
+      // const response = await axios.get(`https://api.getAddress.io/autocomplete/${postcode}?api-key=YOUR_API_KEY`);
+      
+      // Mock response for demo
+      setTimeout(() => {
+        const mockSuggestions: PostcodeLookupSuggestion[] = [
+          { id: "addr1", address: "10 Watkin Terrace, Northampton, NN1 3ER" },
+          { id: "addr2", address: "11 Watkin Terrace, Northampton, NN1 3ER" },
+          { id: "addr3", address: "12 Watkin Terrace, Northampton, NN1 3ER" },
+        ];
+        
+        setAddressSuggestions(mockSuggestions);
+        setIsLoadingAddresses(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+      toast({
+        title: "Address lookup failed",
+        description: "There was an error looking up addresses. Please try again or enter your address manually.",
+        variant: "destructive",
+      });
+      setIsLoadingAddresses(false);
+    }
+  };
+  
+  // Function to fetch full address details
+  const fetchAddressDetails = async (id: string) => {
+    try {
+      // For demo purposes, using a mock API response
+      // In production, replace with real API call:
+      // const response = await axios.get(`https://api.getAddress.io/get/${id}?api-key=YOUR_API_KEY`);
+      
+      // Mock response
+      setTimeout(() => {
+        const mockAddressDetails: PostcodeLookupResult = {
+          postcode: "NN1 3ER",
+          line_1: id === "addr1" ? "10 Watkin Terrace" : id === "addr2" ? "11 Watkin Terrace" : "12 Watkin Terrace",
+          line_2: "",
+          town_or_city: "Northampton",
+          county: "Northamptonshire"
+        };
+        
+        // Fill the form with the address details
+        form.setValue("addressLine1", mockAddressDetails.line_1);
+        form.setValue("addressLine2", mockAddressDetails.line_2);
+        form.setValue("city", mockAddressDetails.town_or_city);
+        form.setValue("county", mockAddressDetails.county);
+        form.setValue("postCode", mockAddressDetails.postcode);
+        
+        // Close the suggestions dropdown
+        setShowAddressSuggestions(false);
+        setSelectedAddressId(id);
+      }, 500);
+    } catch (error) {
+      console.error("Error fetching address details:", error);
+      toast({
+        title: "Failed to get address details",
+        description: "There was an error retrieving the address details. Please try again or enter your address manually.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Function to fill form with current user's details (self-suggestion)
+  const fillWithCurrentUserDetails = () => {
+    if (user) {
+      form.setValue("firstName", user.firstName || "");
+      form.setValue("lastName", user.lastName || "");
+      form.setValue("email", user.email || "");
+      toast({
+        title: "Added your details",
+        description: "We've pre-filled the form with your details. Please review and add any missing information.",
+      });
+    }
+  };
+  
+  // Toggle between manual address entry and postcode lookup
+  const toggleManualAddressEntry = () => {
+    setManualAddressEntry(!manualAddressEntry);
+    if (!manualAddressEntry) {
+      // Switching to manual entry - focus on first address field
+      setTimeout(() => {
+        const addressLine1Input = document.getElementById("addressLine1");
+        if (addressLine1Input) addressLine1Input.focus();
+      }, 100);
+    }
+  };
   
   // Get the user's probate cases
   const { 
@@ -736,6 +876,39 @@ const PeoplePage: React.FC = () => {
                     ? `${isEditing ? "Edit" : "Add"} details of a solicitor or legal professional who is assisting with the probate process.` 
                     : `${isEditing ? "Edit" : "Add"} details of a person who is involved in the probate process or who will be handling the estate.`}
                 </DialogDescription>
+                
+                {/* Self-suggestion banner */}
+                {showSelfSuggestion && !isEditing && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="flex justify-between items-start">
+                      <div className="flex">
+                        <User className="h-5 w-5 text-blue-500 mt-0.5 mr-2" />
+                        <div>
+                          <h4 className="text-sm font-medium text-blue-900">It looks like you're involved in this case</h4>
+                          <p className="text-xs text-blue-700 mt-1">Add yourself as a person in this case?</p>
+                        </div>
+                      </div>
+                      <div>
+                        <Button 
+                          size="sm" 
+                          className="h-7 bg-blue-600 hover:bg-blue-700 text-xs" 
+                          onClick={fillWithCurrentUserDetails}
+                        >
+                          Add Yourself
+                        </Button>
+                      </div>
+                    </div>
+                    <button 
+                      className="text-xs text-blue-700 mt-2 hover:underline flex items-center"
+                      onClick={() => {
+                        setSelfSuggestionDismissed(true);
+                        setShowSelfSuggestion(false);
+                      }}
+                    >
+                      <X className="h-3 w-3 mr-1" /> Do not show again
+                    </button>
+                  </div>
+                )}
               </DialogHeader>
               
               <Form {...form}>
@@ -860,6 +1033,96 @@ const PeoplePage: React.FC = () => {
                   <div className="space-y-3 border-t pt-3">
                     <h3 className="text-sm font-medium">Address</h3>
                     
+                    {/* Postcode Lookup */}
+                    <div className="mb-4">
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <FormField
+                            control={form.control}
+                            name="postCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Postcode <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Enter postcode" 
+                                    {...field} 
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      // Reset address lookup states when postcode changes
+                                      if (selectedAddressId) {
+                                        setSelectedAddressId(null);
+                                        setAddressSuggestions([]);
+                                      }
+                                    }}
+                                    disabled={manualAddressEntry}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handlePostcodeLookup}
+                          disabled={isLoadingAddresses || manualAddressEntry}
+                          className="mb-0.5"
+                        >
+                          {isLoadingAddresses ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Search className="h-4 w-4 mr-1" />
+                              Find Address
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
+                      {/* Address suggestions dropdown */}
+                      {showAddressSuggestions && addressSuggestions.length > 0 && (
+                        <div className="relative mt-1">
+                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                            <div className="p-2 text-xs text-gray-500 border-b">
+                              Select an address from the list:
+                            </div>
+                            <ul className="py-1">
+                              {addressSuggestions.map((suggestion) => (
+                                <li 
+                                  key={suggestion.id}
+                                  className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
+                                  onClick={() => fetchAddressDetails(suggestion.id)}
+                                >
+                                  {suggestion.address}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                          onClick={toggleManualAddressEntry}
+                        >
+                          {manualAddressEntry ? (
+                            <>
+                              <Search className="h-3 w-3 mr-1" />
+                              Use postcode lookup
+                            </>
+                          ) : (
+                            <>
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit address manually
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
                     <FormField
                       control={form.control}
                       name="addressLine1"
@@ -867,7 +1130,12 @@ const PeoplePage: React.FC = () => {
                         <FormItem>
                           <FormLabel>Building and street <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input placeholder="Address line 1" {...field} />
+                            <Input 
+                              id="addressLine1"
+                              placeholder="Address line 1" 
+                              {...field} 
+                              disabled={!manualAddressEntry && selectedAddressId !== null}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -881,7 +1149,11 @@ const PeoplePage: React.FC = () => {
                         <FormItem>
                           <FormLabel>Second line of address</FormLabel>
                           <FormControl>
-                            <Input placeholder="Address line 2 (optional)" {...field} />
+                            <Input 
+                              placeholder="Address line 2 (optional)" 
+                              {...field} 
+                              disabled={!manualAddressEntry && selectedAddressId !== null}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -896,7 +1168,11 @@ const PeoplePage: React.FC = () => {
                           <FormItem>
                             <FormLabel>Town or city <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input placeholder="Town or city" {...field} />
+                              <Input 
+                                placeholder="Town or city" 
+                                {...field} 
+                                disabled={!manualAddressEntry && selectedAddressId !== null}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -910,7 +1186,11 @@ const PeoplePage: React.FC = () => {
                           <FormItem>
                             <FormLabel>County</FormLabel>
                             <FormControl>
-                              <Input placeholder="County (optional)" {...field} />
+                              <Input 
+                                placeholder="County (optional)" 
+                                {...field} 
+                                disabled={!manualAddressEntry && selectedAddressId !== null}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -921,10 +1201,10 @@ const PeoplePage: React.FC = () => {
                         control={form.control}
                         name="postCode"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="hidden md:block">
                             <FormLabel>Postcode <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input placeholder="Postcode" {...field} />
+                              <Input disabled placeholder="Postcode" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

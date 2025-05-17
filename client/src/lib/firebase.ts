@@ -6,6 +6,10 @@ console.log('Current domain:', window.location.hostname);
 console.log('Full host:', window.location.host);
 console.log('Full URL:', window.location.href);
 
+// Check if we're on a mobile device
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+console.log('Is mobile device:', isMobile ? 'yes' : 'no');
+
 // Determine the appropriate authDomain based on environment
 let authDomain = `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`;
 

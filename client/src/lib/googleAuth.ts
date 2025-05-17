@@ -26,14 +26,24 @@ class GoogleAuthError extends Error {
 const getReturnUrl = (): string => {
   const origin = window.location.origin;
   const hostname = window.location.hostname;
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  
+  // Special handling for mobile devices (especially iOS)
+  const mobileParam = isMobile ? '&mobile=true' : '';
   
   // For production domain, ensure we use the proper origin
   if (hostname === 'probateswift.com' || hostname.endsWith('.probateswift.com')) {
-    return `https://${hostname}/auth?authReturn=true`;
+    // Make sure we have a fully qualified URL for mobile devices
+    return `https://${hostname}/auth?authReturn=true${mobileParam}`;
+  }
+  
+  // For Replit domains
+  if (hostname.includes('replit')) {
+    return `${origin}/auth?authReturn=true${mobileParam}`;
   }
   
   // Add state parameter to help identify return from auth
-  return `${origin}/auth?authReturn=true`;
+  return `${origin}/auth?authReturn=true${mobileParam}`;
 };
 
 /**

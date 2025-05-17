@@ -192,60 +192,91 @@ const PeoplePage: React.FC = () => {
     setShowAddressSuggestions(true);
     
     try {
-      // For demo purposes, using a mock API response
-      // In production, you would replace this with a real API call:
-      // const response = await axios.get(`https://api.getAddress.io/autocomplete/${postcode}?api-key=YOUR_API_KEY`);
+      // In a production environment, we would use:
+      // const response = await axios.get(`https://api.getAddress.io/find/${postcode}?api-key=${API_KEY}`);
       
-      // Mock response for demo
-      setTimeout(() => {
-        const mockSuggestions: PostcodeLookupSuggestion[] = [
-          { id: "addr1", address: "10 Watkin Terrace, Northampton, NN1 3ER" },
-          { id: "addr2", address: "11 Watkin Terrace, Northampton, NN1 3ER" },
-          { id: "addr3", address: "12 Watkin Terrace, Northampton, NN1 3ER" },
-        ];
-        
-        setAddressSuggestions(mockSuggestions);
-        setIsLoadingAddresses(false);
-      }, 1000);
+      // For development purposes, we'll make a direct call to our backend proxy
+      const response = await fetch(`/api/address-lookup?postcode=${encodeURIComponent(postcode)}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch addresses');
+      }
+      
+      const data = await response.json();
+      
+      // Format addresses from response
+      const suggestions: PostcodeLookupSuggestion[] = data.addresses.map((address: string, index: number) => ({
+        id: `${postcode}-${index}`,
+        address: `${address}, ${postcode}`
+      }));
+      
+      if (suggestions.length === 0) {
+        toast({
+          title: "No addresses found",
+          description: "No addresses were found for this postcode. Please check the postcode or enter your address manually.",
+        });
+      }
+      
+      setAddressSuggestions(suggestions);
+      setIsLoadingAddresses(false);
     } catch (error) {
       console.error("Error fetching addresses:", error);
-      toast({
-        title: "Address lookup failed",
-        description: "There was an error looking up addresses. Please try again or enter your address manually.",
-        variant: "destructive",
-      });
+      
+      // Fallback to mock data for demo purposes when API is not available
+      const mockSuggestions: PostcodeLookupSuggestion[] = [
+        { id: "addr1", address: "10 Watkin Terrace, Northampton, NN1 3ER" },
+        { id: "addr2", address: "11 Watkin Terrace, Northampton, NN1 3ER" },
+        { id: "addr3", address: "12 Watkin Terrace, Northampton, NN1 3ER" },
+      ];
+      
+      setAddressSuggestions(mockSuggestions);
       setIsLoadingAddresses(false);
+      
+      toast({
+        title: "Using sample addresses",
+        description: "We're showing sample addresses for demonstration. In production, this would use the real postcode lookup service.",
+      });
     }
   };
   
   // Function to fetch full address details
   const fetchAddressDetails = async (id: string) => {
     try {
-      // For demo purposes, using a mock API response
-      // In production, replace with real API call:
-      // const response = await axios.get(`https://api.getAddress.io/get/${id}?api-key=YOUR_API_KEY`);
+      // Parse the full address from the selection
+      const selectedAddress = addressSuggestions.find(suggestion => suggestion.id === id);
       
-      // Mock response
-      setTimeout(() => {
-        const mockAddressDetails: PostcodeLookupResult = {
-          postcode: "NN1 3ER",
-          line_1: id === "addr1" ? "10 Watkin Terrace" : id === "addr2" ? "11 Watkin Terrace" : "12 Watkin Terrace",
-          line_2: "",
-          town_or_city: "Northampton",
-          county: "Northamptonshire"
-        };
-        
-        // Fill the form with the address details
-        form.setValue("addressLine1", mockAddressDetails.line_1);
-        form.setValue("addressLine2", mockAddressDetails.line_2);
-        form.setValue("city", mockAddressDetails.town_or_city);
-        form.setValue("county", mockAddressDetails.county);
-        form.setValue("postCode", mockAddressDetails.postcode);
-        
-        // Close the suggestions dropdown
-        setShowAddressSuggestions(false);
-        setSelectedAddressId(id);
-      }, 500);
+      if (!selectedAddress) {
+        throw new Error('Address not found');
+      }
+      
+      // Format: "Address Line 1, Address Line 2, City, Postcode"
+      const addressParts = selectedAddress.address.split(', ');
+      
+      // In a real implementation we would call the full address details API
+      // Here we'll parse the components from the suggestion string
+      const addressDetails: PostcodeLookupResult = {
+        postcode: addressParts[addressParts.length - 1],
+        line_1: addressParts[0],
+        line_2: addressParts.length > 3 ? addressParts[1] : '',
+        town_or_city: addressParts.length > 3 ? addressParts[2] : addressParts[1],
+        county: ''
+      };
+      
+      // Fill the form with the address details
+      form.setValue("addressLine1", addressDetails.line_1);
+      form.setValue("addressLine2", addressDetails.line_2);
+      form.setValue("city", addressDetails.town_or_city);
+      form.setValue("county", addressDetails.county);
+      form.setValue("postCode", addressDetails.postcode);
+      
+      // Close the suggestions dropdown
+      setShowAddressSuggestions(false);
+      setSelectedAddressId(id);
+      
+      toast({
+        title: "Address selected",
+        description: "The address has been filled in the form. You can edit it if needed.",
+      });
     } catch (error) {
       console.error("Error fetching address details:", error);
       toast({

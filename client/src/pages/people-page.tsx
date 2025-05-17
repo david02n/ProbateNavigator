@@ -1728,9 +1728,11 @@ const PeoplePage: React.FC = () => {
               </DialogHeader>
               
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <h3 className="text-sm font-medium">Select Document Type</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  
+                  {/* Desktop Document Selection - Button Grid */}
+                  <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-3">
                     <Button
                       type="button"
                       variant={selectedDocumentType === 'will' ? 'default' : 'outline'}
@@ -1741,7 +1743,7 @@ const PeoplePage: React.FC = () => {
                     >
                       <div className="flex-1 text-left">
                         <div className="font-medium">Will</div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 mt-1 line-clamp-2">
                           Extract executors and beneficiaries from the Will document
                         </div>
                       </div>
@@ -1757,11 +1759,96 @@ const PeoplePage: React.FC = () => {
                     >
                       <div className="flex-1 text-left">
                         <div className="font-medium">Death Certificate</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Extract personal details from Death Certificate
+                        <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          Extract deceased person's details automatically for this probate case
                         </div>
                       </div>
                     </Button>
+                    
+                    <Button
+                      type="button"
+                      variant={selectedDocumentType === 'id_document' ? 'default' : 'outline'}
+                      className={`flex justify-start items-center h-auto py-3 px-4 ${
+                        selectedDocumentType === 'id_document' ? 'border-primary' : ''
+                      }`}
+                      onClick={() => setSelectedDocumentType('id_document')}
+                    >
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">ID Document</div>
+                        <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          Extract details from passport, driving license or other ID
+                        </div>
+                      </div>
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant={selectedDocumentType === 'bill' ? 'default' : 'outline'}
+                      className={`flex justify-start items-center h-auto py-3 px-4 ${
+                        selectedDocumentType === 'bill' ? 'border-primary' : ''
+                      }`}
+                      onClick={() => setSelectedDocumentType('bill')}
+                    >
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">Bill or Statement</div>
+                        <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          Extract name and address details from bills or statements
+                        </div>
+                      </div>
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant={selectedDocumentType === 'other' ? 'default' : 'outline'}
+                      className={`flex justify-start items-center h-auto py-3 px-4 ${
+                        selectedDocumentType === 'other' ? 'border-primary' : ''
+                      }`}
+                      onClick={() => setSelectedDocumentType('other')}
+                    >
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">Other Document</div>
+                        <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          Upload any other document containing person details
+                        </div>
+                      </div>
+                    </Button>
+                  </div>
+                  
+                  {/* Mobile Document Selection - Dropdown */}
+                  <div className="sm:hidden">
+                    <Select value={selectedDocumentType || ""} onValueChange={(value) => setSelectedDocumentType(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select document type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="will">Will</SelectItem>
+                        <SelectItem value="death_certificate">Death Certificate</SelectItem>
+                        <SelectItem value="id_document">ID Document</SelectItem>
+                        <SelectItem value="bill">Bill or Statement</SelectItem>
+                        <SelectItem value="other">Other Document</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Description for selected doc type on mobile */}
+                    {selectedDocumentType && (
+                      <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
+                        {selectedDocumentType === 'will' && (
+                          <p>Extract executors and beneficiaries from the Will document</p>
+                        )}
+                        {selectedDocumentType === 'death_certificate' && (
+                          <p>Extract deceased person's details automatically for this probate case</p>
+                        )}
+                        {selectedDocumentType === 'id_document' && (
+                          <p>Extract details from passport, driving license or other ID</p>
+                        )}
+                        {selectedDocumentType === 'bill' && (
+                          <p>Extract name and address details from bills or statements</p>
+                        )}
+                        {selectedDocumentType === 'other' && (
+                          <p>Upload any other document containing person details</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -1769,6 +1856,7 @@ const PeoplePage: React.FC = () => {
                   <h3 className="text-sm font-medium mb-3">Choose Document Source</h3>
                   
                   <div className="space-y-3">
+                    {/* Select from previously uploaded documents */}
                     <div className="flex flex-col space-y-2">
                       <label className="text-sm font-medium">Select from uploaded documents</label>
                       <Select disabled={!selectedDocumentType}>
@@ -1782,6 +1870,7 @@ const PeoplePage: React.FC = () => {
                       </Select>
                     </div>
                     
+                    {/* Divider */}
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t border-gray-300" />
@@ -1791,25 +1880,86 @@ const PeoplePage: React.FC = () => {
                       </div>
                     </div>
                     
+                    {/* Upload a new document */}
                     <div>
                       <label className="text-sm font-medium">Upload a new document</label>
-                      <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
+                      
+                      {/* Desktop File Upload */}
+                      <div className="hidden sm:flex mt-2 justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
                         <div className="text-center">
                           <Upload className="mx-auto h-12 w-12 text-gray-300" />
                           <div className="mt-4 flex text-sm leading-6 text-gray-600">
                             <label
-                              htmlFor="file-upload"
+                              htmlFor="file-upload-desktop"
                               className="relative cursor-pointer rounded-md bg-white font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary"
                             >
                               <span>Upload a file</span>
-                              <input id="file-upload" name="file-upload" type="file" className="sr-only" />
+                              <input id="file-upload-desktop" name="file-upload" type="file" accept="image/*,.pdf" className="sr-only" />
                             </label>
                             <p className="pl-1">or drag and drop</p>
                           </div>
                           <p className="text-xs leading-5 text-gray-600">PDF, PNG, JPG up to 10MB</p>
                         </div>
                       </div>
+                      
+                      {/* Mobile Upload Options */}
+                      <div className="sm:hidden mt-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Take Photo */}
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            className="flex flex-col items-center justify-center h-24 p-2"
+                            onClick={() => {
+                              // This would typically open the camera
+                              toast({
+                                title: "Camera Access",
+                                description: "Camera access requested to take a photo.",
+                              });
+                            }}
+                          >
+                            <Upload className="h-8 w-8 mb-2 text-gray-500" />
+                            <span className="text-sm text-center">Take Photo</span>
+                          </Button>
+                          
+                          {/* Choose from Camera Roll */}
+                          <label 
+                            htmlFor="file-upload-mobile" 
+                            className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input bg-transparent hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                          >
+                            <FileText className="h-8 w-8 mb-2 text-gray-500" />
+                            <span className="text-sm text-center">Camera Roll</span>
+                            <input 
+                              id="file-upload-mobile" 
+                              type="file" 
+                              accept="image/*,.pdf" 
+                              capture="environment" 
+                              className="sr-only" 
+                            />
+                          </label>
+                        </div>
+                        
+                        {/* Description text for mobile */}
+                        <p className="text-xs text-center mt-2 text-gray-500">
+                          Take a photo or select from your gallery
+                        </p>
+                      </div>
                     </div>
+                    
+                    {/* Additional description field for "Other" document type */}
+                    {selectedDocumentType === 'other' && (
+                      <div className="mt-3">
+                        <label className="text-sm font-medium">Document Description</label>
+                        <Input 
+                          type="text" 
+                          placeholder="Describe the document (e.g., Power of Attorney)"
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Please provide a description to help us correctly process this document
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

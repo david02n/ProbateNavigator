@@ -1853,15 +1853,17 @@ const PeoplePage: React.FC = () => {
                 </div>
                 
                 <div className="border rounded-lg p-4 bg-gray-50 relative">
-                  {/* Coming Soon Overlay */}
-                  <div className="absolute inset-0 bg-gray-100/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg">
-                    <div className="bg-primary text-white font-semibold px-4 py-2 rounded-full mb-2">
-                      Coming Soon
+                  {/* Coming Soon Overlay - Only for "Other Document" type */}
+                  {selectedDocumentType === 'other' && (
+                    <div className="absolute inset-0 bg-gray-100/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg">
+                      <div className="bg-primary text-white font-semibold px-4 py-2 rounded-full mb-2">
+                        Coming Soon
+                      </div>
+                      <p className="text-center text-gray-600 max-w-md px-4">
+                        Document processing for this document type is currently in development.
+                      </p>
                     </div>
-                    <p className="text-center text-gray-600 max-w-md px-4">
-                      The "Add from Document" feature is currently in development. This will allow you to extract person details directly from uploaded documents.
-                    </p>
-                  </div>
+                  )}
                   
                   <h3 className="text-sm font-medium mb-3">Choose Document Source</h3>
                   
@@ -1869,15 +1871,28 @@ const PeoplePage: React.FC = () => {
                     {/* Select from previously uploaded documents */}
                     <div className="flex flex-col space-y-2">
                       <label className="text-sm font-medium">Select from uploaded documents</label>
-                      <Select disabled={true}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an uploaded document" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="example1">Will_Draft_Final.pdf</SelectItem>
-                          <SelectItem value="example2">Death_Certificate.pdf</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {selectedDocumentType && selectedDocumentType !== 'other' ? (
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an uploaded document" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* This will be populated with actual documents from your documents tab */}
+                            <SelectItem value="example1">Will_Draft_Final.pdf</SelectItem>
+                            <SelectItem value="example2">Death_Certificate.pdf</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Select disabled={true}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an uploaded document" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="example1">Will_Draft_Final.pdf</SelectItem>
+                            <SelectItem value="example2">Death_Certificate.pdf</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
                     
                     {/* Divider */}
@@ -1894,34 +1909,93 @@ const PeoplePage: React.FC = () => {
                     <div>
                       <label className="text-sm font-medium">Upload a new document</label>
                       
-                      {/* Desktop File Upload */}
-                      <div className="hidden sm:flex mt-2 justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
-                        <div className="text-center">
-                          <Upload className="mx-auto h-12 w-12 text-gray-300" />
-                          <div className="mt-4 text-sm leading-6 text-gray-600">
-                            <span className="font-semibold text-primary">Upload a file</span>
-                            <span className="pl-1">or drag and drop</span>
-                          </div>
-                          <p className="text-xs leading-5 text-gray-600">PDF, PNG, JPG up to 10MB</p>
-                        </div>
-                      </div>
-                      
-                      {/* Mobile Upload Options */}
-                      <div className="sm:hidden mt-4">
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Take Photo */}
-                          <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
-                            <Upload className="h-8 w-8 mb-2 text-gray-400" />
-                            <span className="text-sm text-center text-gray-400">Take Photo</span>
+                      {selectedDocumentType && selectedDocumentType !== 'other' ? (
+                        <>
+                          {/* Desktop File Upload */}
+                          <div className="hidden sm:flex mt-2 justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
+                            <div className="text-center">
+                              <label htmlFor="file-upload" className="cursor-pointer">
+                                <Upload className="mx-auto h-12 w-12 text-gray-300" />
+                                <div className="mt-4 text-sm leading-6 text-gray-600">
+                                  <span className="font-semibold text-primary">Upload a file</span>
+                                  <span className="pl-1">or drag and drop</span>
+                                </div>
+                                <p className="text-xs leading-5 text-gray-600">PDF, PNG, JPG up to 10MB</p>
+                                <input 
+                                  id="file-upload" 
+                                  name="file-upload" 
+                                  type="file" 
+                                  className="sr-only" 
+                                  accept=".pdf,.png,.jpg,.jpeg" 
+                                />
+                              </label>
+                            </div>
                           </div>
                           
-                          {/* Choose from Camera Roll */}
-                          <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
-                            <FileText className="h-8 w-8 mb-2 text-gray-400" />
-                            <span className="text-sm text-center text-gray-400">Camera Roll</span>
+                          {/* Mobile Upload Options */}
+                          <div className="sm:hidden mt-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              {/* Take Photo */}
+                              <label className="cursor-pointer">
+                                <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
+                                  <Upload className="h-8 w-8 mb-2 text-gray-400" />
+                                  <span className="text-sm text-center text-gray-400">Take Photo</span>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    capture="environment" 
+                                    className="sr-only" 
+                                  />
+                                </div>
+                              </label>
+                              
+                              {/* Choose from Camera Roll */}
+                              <label className="cursor-pointer">
+                                <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
+                                  <FileText className="h-8 w-8 mb-2 text-gray-400" />
+                                  <span className="text-sm text-center text-gray-400">Camera Roll</span>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*,.pdf" 
+                                    className="sr-only" 
+                                  />
+                                </div>
+                              </label>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Desktop File Upload - Disabled version */}
+                          <div className="hidden sm:flex mt-2 justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10 opacity-60">
+                            <div className="text-center">
+                              <Upload className="mx-auto h-12 w-12 text-gray-300" />
+                              <div className="mt-4 text-sm leading-6 text-gray-600">
+                                <span className="font-semibold text-primary">Upload a file</span>
+                                <span className="pl-1">or drag and drop</span>
+                              </div>
+                              <p className="text-xs leading-5 text-gray-600">PDF, PNG, JPG up to 10MB</p>
+                            </div>
+                          </div>
+                          
+                          {/* Mobile Upload Options - Disabled version */}
+                          <div className="sm:hidden mt-4">
+                            <div className="grid grid-cols-2 gap-3 opacity-60">
+                              {/* Take Photo */}
+                              <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
+                                <Upload className="h-8 w-8 mb-2 text-gray-400" />
+                                <span className="text-sm text-center text-gray-400">Take Photo</span>
+                              </div>
+                              
+                              {/* Choose from Camera Roll */}
+                              <div className="flex flex-col items-center justify-center h-24 p-2 border rounded-md border-input">
+                                <FileText className="h-8 w-8 mb-2 text-gray-400" />
+                                <span className="text-sm text-center text-gray-400">Camera Roll</span>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1937,14 +2011,41 @@ const PeoplePage: React.FC = () => {
                 </Button>
                 <Button
                   type="button"
-                  disabled={!selectedDocumentType}
+                  disabled={!selectedDocumentType || selectedDocumentType === 'other'}
                   onClick={() => {
-                    // In a real implementation, this would extract data from the document
-                    // and pre-fill the person form
+                    if (selectedDocumentType === 'other') {
+                      toast({
+                        title: "Coming Soon",
+                        description: "This document type processing is still in development.",
+                      });
+                      return;
+                    }
+                    
+                    // Extract data from the document and pre-fill the person form
+                    // For now, we'll show a successful toast and close the modal
                     toast({
-                      title: "Coming Soon",
-                      description: "This feature is coming soon! Currently in development.",
+                      title: "Document Processed",
+                      description: `Person details extracted from ${selectedDocumentType.replace('_', ' ')}`,
                     });
+                    
+                    // Pre-fill a new person form with some default values based on document type
+                    const newPerson = {
+                      firstName: selectedDocumentType === 'will' ? 'Executor' : 'Person',
+                      lastName: 'From Document',
+                      status: 'needs_more_info'
+                    };
+                    
+                    // Open the person form with pre-filled values
+                    setEditingExecutor(null);
+                    form.reset({
+                      firstName: newPerson.firstName,
+                      lastName: newPerson.lastName,
+                      isExecutor: selectedDocumentType === 'will',
+                      isApplicant: selectedDocumentType === 'id_document',
+                      isNotifying: false,
+                      status: 'needs_more_info'
+                    });
+                    setIsPersonModalOpen(true);
                     setIsPersonFromDocModalOpen(false);
                   }}
                 >

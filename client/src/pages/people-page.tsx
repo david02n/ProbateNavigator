@@ -639,19 +639,45 @@ const PeoplePage: React.FC = () => {
                             <User className="h-5 w-5" />
                           </div>
                           <div>
-                            <div className="flex items-center">
+                            <div className="flex items-center flex-wrap gap-2">
                               <h3 className="font-medium text-lg">
                                 {executor.firstName} {executor.lastName}
                               </h3>
                               {executor.isPrimary && (
-                                <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                   Primary Applicant
+                                </span>
+                              )}
+                              {executor.isExecutor && (
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                  Executor
+                                </span>
+                              )}
+                              {executor.status === 'needs_more_info' && (
+                                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full flex items-center">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Needs more information
                                 </span>
                               )}
                             </div>
                             <p className="text-gray-500 text-sm mt-1">
-                              {executor.relationshipToDeceased || "Family member"} of the deceased
+                              {executor.relationshipToDeceased || "Relationship not specified"} 
+                              {executor.status === 'needs_more_info' && (
+                                <span className="text-amber-600 ml-2 text-xs">
+                                  Please complete all required fields
+                                </span>
+                              )}
                             </p>
+                            {executor.status === 'needs_more_info' && (
+                              <div className="mt-2 text-xs">
+                                <span className="font-medium text-amber-800">Missing: </span>
+                                {!executor.firstName && <span className="text-amber-600 mr-1">First name</span>}
+                                {!executor.lastName && <span className="text-amber-600 mr-1">Last name</span>}
+                                {!executor.addressLine1 && <span className="text-amber-600 mr-1">Address</span>}
+                                {!executor.city && <span className="text-amber-600 mr-1">Town/city</span>}
+                                {!executor.postCode && <span className="text-amber-600 mr-1">Postcode</span>}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex space-x-2">

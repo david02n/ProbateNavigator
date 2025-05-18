@@ -237,13 +237,51 @@ export const getQueryFn: <T>(options: {
           return localStorage.getItem('firebase_id_token');
         };
         
-        // Get token and add to headers if available
+        // Get token and add to headers if available - CRITICAL FOR PRODUCTION
         const token = await getFreshToken();
         if (token) {
           console.log("[Query] Adding Firebase ID token as Bearer token");
           (fetchOptions.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+          
+          // PRODUCTION FIX: Force token to be stored in multiple places to ensure it's available
+          // This is especially important for probateswift.com production environment
+          if (window.location.hostname.includes('probateswift.com')) {
+            console.log("PRODUCTION: Ensuring token is available for probateswift.com");
+            localStorage.setItem('firebase_id_token', token);
+            sessionStorage.setItem('firebase_id_token', token);
+            
+            // Create a global access point as last resort for debugging
+            (window as any).__lastAuthToken = {
+              timestamp: new Date().toISOString(),
+              length: token.length
+            };
+          }
         } else {
-          console.log("[Query] No Firebase token available");
+          console.log("[Query] No Firebase token available - attempting emergency retrieval");
+          
+          // EMERGENCY TOKEN RETRIEVAL FOR PRODUCTION
+          if (window.location.hostname.includes('probateswift.com')) {
+            console.log("PRODUCTION EMERGENCY: Authentication token missing, checking all possible sources");
+            
+            try {
+              // 1. Check current Firebase user directly
+              const currentUser = (window as any).firebase?.auth?.currentUser;
+              if (currentUser) {
+                try {
+                  const emergencyToken = await currentUser.getIdToken(true);
+                  if (emergencyToken) {
+                    console.log("PRODUCTION: Obtained emergency token from currentUser");
+                    (fetchOptions.headers as Record<string, string>)["Authorization"] = `Bearer ${emergencyToken}`;
+                    localStorage.setItem('firebase_id_token', emergencyToken);
+                  }
+                } catch (e) {
+                  console.error("PRODUCTION: Failed to get emergency token", e);
+                }
+              }
+            } catch (e) {
+              console.error("PRODUCTION: Firebase user access error", e);
+            }
+          }
         }
       } catch (tokenError) {
         console.error("[Query] Error getting Firebase token:", tokenError);

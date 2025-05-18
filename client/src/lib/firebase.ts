@@ -41,13 +41,22 @@ export function waitForAuthInit(): Promise<void> {
   return new Promise((resolve) => {
     // Check if auth is already initialized with a user
     if (auth.currentUser) {
+      console.log("Firebase already initialized with user:", auth.currentUser.email);
       return resolve();
     }
+    
+    console.log("Waiting for Firebase Auth state...");
     
     // Otherwise wait for auth state to change
     const unsubscribe = auth.onAuthStateChanged((user) => {
       // Clean up the listener to avoid memory leaks
       unsubscribe();
+      
+      if (user) {
+        console.log("Firebase Auth initialized with user:", user.email);
+      } else {
+        console.log("Firebase Auth initialized, no user logged in");
+      }
       
       // Auth state has loaded (user may be null, that's fine)
       // The key is that Firebase has had a chance to check for a user
@@ -56,14 +65,25 @@ export function waitForAuthInit(): Promise<void> {
   });
 }
 
+// Global token cache
+let cachedToken: string | null = null;
+let tokenTimestamp: number = 0;
+
 // Helper function to get fresh tokens and maintain auth state across domains
 // This is critical for production environments where cookies don't work cross-domain
 export async function getFreshToken(): Promise<string | null> {
   // Special handling for production environment at probateswift.com
-  const isProduction = window.location.hostname.includes('probateswift.com');
+  const isProduction = window.location.hostname.includes('probateswift.com') || 
+                      window.location.hostname.includes('replit.app');
   
-  if (isProduction) {
-    console.log('PRODUCTION: Getting Firebase token for probateswift.com');
+  // Debug all environments to identify token issues
+  console.log(`[Auth] Getting Firebase token for ${window.location.hostname}`);
+  
+  // Check if we have a cached token that's less than 30 minutes old
+  const tokenAge = Date.now() - tokenTimestamp;
+  if (cachedToken && tokenAge < 30 * 60 * 1000) {
+    console.log(`[Auth] Using cached token (age: ${tokenAge/1000}s)`);
+    return cachedToken;
   }
   
   // Wait for Firebase Auth to initialize before attempting to get token
@@ -72,35 +92,64 @@ export async function getFreshToken(): Promise<string | null> {
   try {
     const currentUser = auth.currentUser;
     if (currentUser) {
+      console.log(`[Auth] Current user found: ${currentUser.email}`);
+      
       // Force token refresh - critical for production environments
       const token = await currentUser.getIdToken(true);
       
-      // Save to localStorage for cross-domain API requests
-      localStorage.setItem('firebase_id_token', token);
+      // Update cache
+      cachedToken = token;
+      tokenTimestamp = Date.now();
       
-      if (isProduction) {
-        console.log('PRODUCTION: Successfully got fresh token (length: ' + token.length + ')');
-        
-        // In production, also store in sessionStorage as additional backup
-        sessionStorage.setItem('firebase_id_token', token);
-        
-        // For debugging - store token verification time
-        localStorage.setItem('firebase_token_time', new Date().toISOString());
-      }
+      // Save to both storage options for resilience
+      localStorage.setItem('firebase_id_token', token);
+      sessionStorage.setItem('firebase_id_token', token);
+      
+      // Log token info (without revealing the actual token)
+      console.log(`[Auth] Successfully got token (length: ${token.length})`);
+      
+      // Add metadata for debugging
+      localStorage.setItem('firebase_token_time', new Date().toISOString());
+      localStorage.setItem('firebase_user_email', currentUser.email || 'unknown');
+      
+      // For direct testing in console
+      (window as any).__firebaseAuthDebug = {
+        hasToken: true,
+        tokenLength: token.length,
+        userEmail: currentUser.email,
+        timestamp: new Date().toISOString()
+      };
       
       return token;
     } else {
-      if (isProduction) {
-        console.log('PRODUCTION WARNING: No current user found for token refresh');
+      console.warn('[Auth] No current user found for token refresh');
+      cachedToken = null;
+      tokenTimestamp = 0;
+      
+      // Try emergency retrieval from storage
+      const stored = localStorage.getItem('firebase_id_token') || 
+                    sessionStorage.getItem('firebase_id_token');
+                    
+      if (stored) {
+        console.log('[Auth] Found stored token, but user not logged in - clearing token');
+        localStorage.removeItem('firebase_id_token');
+        sessionStorage.removeItem('firebase_id_token');
       }
+      
+      return null;
     }
   } catch (error) {
-    console.error('Error getting fresh token:', error);
+    console.error('[Auth] Error getting fresh token:', error);
     
-    if (isProduction) {
-      // Log detailed error info in production
-      console.error('PRODUCTION TOKEN ERROR:', JSON.stringify(error));
-    }
+    // Reset cache on error
+    cachedToken = null;
+    tokenTimestamp = 0;
+    
+    // Clear storage on error as token might be invalid
+    localStorage.removeItem('firebase_id_token');
+    sessionStorage.removeItem('firebase_id_token');
+    
+    return null;
   }
   
   // Try to get cached token from storage as fallback

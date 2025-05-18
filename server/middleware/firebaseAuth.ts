@@ -124,9 +124,6 @@ export function createFirebaseAuthMiddleware() {
         // Set a property that routes can check for authentication
         req.user = user;
         
-        // Attach user to request for route handlers
-        req.user = user;
-        
         console.log('Firebase auth: Successfully authenticated user:', email);
       } catch (error) {
         console.error('Error processing Firebase user:', error);

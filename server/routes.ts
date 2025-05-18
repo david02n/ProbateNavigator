@@ -171,10 +171,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create new user
         user = await storage.createUser({
           email: email as string,
-          firstName: firstName || null,
-          lastName: lastName || null,
-          firebaseUid: firebaseUid || null,
-          photoURL: photoURL || null,
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          firebaseUid: firebaseUid || undefined,
+          photoURL: photoURL || undefined,
           password: 'FIREBASE_AUTH_USER', // Not used with Firebase auth but required by schema
           isGuest: false
         });
@@ -186,45 +186,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to create or update user' });
       }
       
-      // Log the user in
+      // Log the user in - this uses Passport's login method
       req.login(user, (err) => {
         if (err) {
           console.error('Login error:', err);
           return res.status(500).json({ error: 'Failed to login' });
         }
         
-        // Set additional cookie options for extra security and better mobile support
+        // Get device information
         const userAgent = req.headers['user-agent'] || '';
         const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(userAgent);
         const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
+        
+        // Get domain information
         const host = req.headers.host || '';
+        const origin = req.headers.origin || '';
+        const clientOrigin = req.body.origin || '';
+        const clientDomain = req.body.domain || '';
+        
+        // Determine if this is a production domain
         const isProbateSwift = host.includes('probateswift.com') || host.includes('probateswift.replit.app');
+        const isProdDomain = host.includes('probateswift.com');
         
-        // Log details for debugging
-        console.log(`Google auth login success for: ${user.email}`);
+        // Log all authentication details
+        console.log('=== GOOGLE AUTH SUCCESS ===');
+        console.log(`User: ${user.email} (ID: ${user.id})`);
         console.log(`Device: ${isMobile ? (isIOS ? 'iOS' : 'Android/Other Mobile') : 'Desktop'}`);
-        console.log(`Host: ${host}`);
+        console.log(`Server host: ${host}`);
+        console.log(`Client origin: ${clientOrigin || 'Not reported'}`);
+        console.log(`Client domain: ${clientDomain || 'Not reported'}`);
+        console.log(`Server request origin: ${origin || 'None'}`);
+        console.log(`Is production domain: ${isProdDomain ? 'Yes' : 'No'}`);
+        console.log(`Session ID: ${req.sessionID || 'No session ID'}`);
+        console.log(`User in session: ${req.user ? 'Present' : 'Missing'}`);
         
-        // For iOS devices and production domains, set an additional access token cookie
-        // that is explicitly visible to client-side JavaScript
-        if (isProbateSwift) {
-          const cookieOptions: any = {
+        // Force save the session to ensure it persists
+        if (req.session) {
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error('Session save error:', saveErr);
+            } else {
+              console.log('Session saved successfully');
+            }
+          });
+        }
+        
+        // For production domains, set additional access token cookies
+        // that are explicitly visible to client-side JavaScript
+        if (isProbateSwift || isProdDomain) {
+          // Set options for the visible marker cookie
+          const cookieOptions: {
+            httpOnly: boolean;
+            secure: boolean;
+            sameSite: 'none' | 'lax' | 'strict';
+            maxAge: number;
+            domain?: string;
+          } = {
             httpOnly: false, // Make visible to JavaScript
             secure: true,
-            sameSite: isMobile ? 'lax' : 'none', // Use lax for mobile which handles 'none' poorly
+            sameSite: 'none', // Always use 'none' for cross-origin support 
             maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
           };
           
-          // Set domain for production
-          if (host.includes('probateswift.com')) {
-            cookieOptions.domain = '.probateswift.com';
+          // Set domain appropriately
+          if (isProdDomain || host.includes('probateswift.com')) {
+            cookieOptions.domain = 'probateswift.com';
+            console.log('Using root domain for cookies: probateswift.com');
+          } else if (host.includes('replit')) {
+            // For Replit domains, use the full host as the domain
+            cookieOptions.domain = host;
+            console.log(`Using exact domain for cookies: ${host}`);
           }
           
-          // Set a visible session indicator cookie for the client to detect
+          // Set visible session indicator cookies
           res.cookie('ps_auth_token', 'active', cookieOptions);
-          console.log(`Set visible auth cookie for ${host} with SameSite=${cookieOptions.sameSite}`);
+          res.cookie('ps_user_id', user.id.toString(), cookieOptions);
+          res.cookie('ps_auth_email', user.email, cookieOptions);
+          
+          console.log(`Set visible auth cookies with SameSite=${cookieOptions.sameSite}, Domain=${cookieOptions.domain}`);
         }
         
+        // Return the user object to the client
         return res.status(200).json(user);
       });
     } catch (error) {

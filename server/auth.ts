@@ -205,6 +205,9 @@ export function setupAuth(app: Express) {
       cookieSettings.domain = domain;
     }
     
+    // Determine if this is a production domain
+    const isProdDomain = host.includes('probateswift.com');
+    
     // Create session settings with enhanced cross-domain cookie support
     const currentSettings: session.SessionOptions = {
       secret: process.env.SESSION_SECRET || "probate-swift-session-secret",
@@ -212,20 +215,48 @@ export function setupAuth(app: Express) {
       saveUninitialized: true, // Create session for all requests
       store: storage.sessionStore,
       cookie: cookieSettings,
-      name: 'probswft.sid', // Consistent cookie name 
+      name: 'probswft.sid', // Consistent cookie name
       proxy: true, // Trust proxy headers for secure cookie detection
     };
     
     // For production domains, create a visible marker cookie that service workers can use
-    if (isProbateSwift) {
-      res.cookie('ps_auth_marker', 'active', {
+    if (isProbateSwift || isProdDomain) {
+      // Create two marker cookies - one for each relevant domain
+      
+      // 1. Domain-specific cookie for the exact domain
+      const exactDomainCookie = {
         secure: true,
-        sameSite: 'none',
+        sameSite: 'none' as 'none',
         httpOnly: false, // Make this visible to JS
         maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
         path: '/',
         domain: domain || undefined
-      });
+      };
+      
+      res.cookie('ps_auth_marker', 'active', exactDomainCookie);
+      console.log(`Set visible auth cookie for exact domain: ${domain}`);
+      
+      // 2. Root domain cookie for probateswift.com
+      if (isProdDomain) {
+        const rootDomainCookie: {
+          secure: boolean;
+          sameSite: 'none' | 'lax' | 'strict';
+          httpOnly: boolean;
+          maxAge: number;
+          path: string;
+          domain: string;
+        } = {
+          secure: true,
+          sameSite: 'none' as const,
+          httpOnly: false,
+          maxAge: 1000 * 60 * 60 * 24 * 7,
+          path: '/',
+          domain: 'probateswift.com' // Explicitly use root domain
+        };
+        
+        res.cookie('ps_auth_root', 'active', rootDomainCookie);
+        console.log('Set visible auth cookie for root domain: probateswift.com');
+      }
     }
     
     // Create and use session with the appropriate settings

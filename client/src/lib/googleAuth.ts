@@ -207,9 +207,9 @@ export async function handleRedirectResult() {
       
       // For production, use the full URL to avoid any proxy issues
       // Critical fix: For probateswift.com, we need absolute URL to ensure same-origin request
-      const apiUrl = isProd 
-        ? 'https://probateswift.com/api/auth/google'
-        : '/api/auth/google';
+      // Critical fix for production: Always use relative URL to avoid CORS issues
+      // This ensures the request goes to the same origin as the page
+      const apiUrl = '/api/auth/google';
       
       console.log(`Using API URL: ${apiUrl} for domain: ${domain}`);
       

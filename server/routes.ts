@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { createFirebaseAuthMiddleware } from "./middleware/firebaseAuth";
 import multer from "multer";
 import * as fs from "fs";
 import * as path from "path";

@@ -53,16 +53,21 @@ export async function signInWithGoogle() {
       });
       
       // Configure provider for mobile with extra parameters
-      googleProvider.setCustomParameters({
+      const customParams: {[key: string]: string} = {
         prompt: 'select_account',
         state,
         // For iOS, add these parameters for better handling
         iosId: 'org.reactjs.native.probateswift', 
-        app_id: 'probateswift',
-        // Add login_hint if we have a previous email from localStorage
-        ...(localStorage.getItem('mobile_last_email') ? 
-          { login_hint: localStorage.getItem('mobile_last_email') } : {})
-      });
+        app_id: 'probateswift'
+      };
+      
+      // Add login_hint if we have a previous email from localStorage
+      const savedEmail = localStorage.getItem('mobile_last_email');
+      if (savedEmail) {
+        customParams.login_hint = savedEmail;
+      }
+      
+      googleProvider.setCustomParameters(customParams);
       
       // For iOS, specially handle the redirect
       if (isIOS) {
@@ -201,29 +206,50 @@ export async function handleRedirectResult() {
       const isProd = domain.includes('probateswift.com');
       
       // For production, use the full URL to avoid any proxy issues
+      // Critical fix: For probateswift.com, we need absolute URL to ensure same-origin request
       const apiUrl = isProd 
         ? 'https://probateswift.com/api/auth/google'
         : '/api/auth/google';
-        
+      
       console.log(`Using API URL: ${apiUrl} for domain: ${domain}`);
+      
+      // Generate a session verification token to help identify this authentication attempt
+      const sessionVerificationToken = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('auth_verification_token', sessionVerificationToken);
+      
+      // Store the current time to help with debugging session issues
+      localStorage.setItem('auth_request_time', Date.now().toString());
+      
+      // Add direct user details to help with account creation if token verification fails
+      const userData = {
+        idToken,
+        // Include basic user info as fallback if token verification fails
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        // Include domain information to help server with cookie settings
+        domain: window.location.hostname,
+        origin: window.location.origin,
+        isMobile: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
+        // Include verification token and timestamp
+        verificationToken: sessionVerificationToken,
+        requestTime: Date.now(),
+        // Include Firebase UUID to help with account linking
+        firebaseUid: user.uid || null
+      };
+      
+      console.log('Sending authentication data to server:', {
+        ...userData,
+        idToken: '***REDACTED***' // Don't log the actual token
+      });
       
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          idToken,
-          // Include basic user info as fallback if token verification fails
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          // Include domain information to help server with cookie settings
-          domain: window.location.hostname,
-          origin: window.location.origin,
-          isMobile: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-        }),
-        credentials: 'include', // Important for cookies
+        body: JSON.stringify(userData),
+        credentials: 'include', // Critical for cookies to be included
       });
       
       if (!response.ok) {

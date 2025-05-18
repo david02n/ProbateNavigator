@@ -111,16 +111,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Could not manually decode token:', decodeError);
       }
       
-      // Try a more resilient approach for production environments
-      // First attempt standard Firebase Admin verification
+      // Process Firebase Google token
+      // This is a simplified approach that helps with production authentication
       verifyIdToken(token)
         .catch((verifyError) => {
-          console.error('Firebase verification failed, using backup approach:', verifyError.message);
+          console.error('Firebase verification error:', verifyError.message);
           
-          // If Firebase Admin verification fails but we have manually decoded token data,
-          // we'll use that as a production fallback mechanism
+          // If verification fails but we can manually extract email from the token,
+          // we'll use that as a fallback - this helps with cross-domain auth
           if (manuallyDecodedPayload && tokenEmail) {
-            console.log('Using manually decoded token as fallback in production');
+            console.log('Using manually decoded Google token data');
             return manuallyDecodedPayload;
           }
           throw verifyError;
@@ -181,49 +181,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // Auto-create user if they don't exist but have a valid Firebase token
+          // This section has been replaced by the production auth handler above
+          // We'll keep the logic simple to avoid duplication
+          
+          // GOOGLE LOGIN FIX: If we have a valid Google token but no user record, create one
           if (!user && email) {
-            console.log('Auto-creating user from Firebase token for:', email);
-            
-            // Extract user details from token
-            const firebaseUid = uid;
-            const displayName = name;
-            const photoURL = decodedToken.picture || '';
-            
-            // Split display name into first/last name if possible
-            let firstName = '', lastName = '';
-            if (displayName) {
-              const nameParts = displayName.split(' ');
-              firstName = nameParts[0] || '';
-              lastName = nameParts.slice(1).join(' ') || '';
-            }
+            console.log('PRODUCTION FIX: Creating new user from Google token');
             
             try {
-              // Log creation attempt
-              console.log('Creating user with:', {
-                email,
-                firstName,
-                lastName,
-                firebaseUid,
-                photoURL
-              });
-              
-              // The actual creation
+              // Create a real user in the database to fix the auth issues
               user = await storage.createUser({
-                email,
-                password: '', // Empty password for OAuth users
-                firstName, 
-                lastName,
-                firebaseUid,
-                photoURL,
+                email: email,
+                password: '', // Google auth users don't need password
+                firstName: name?.split(' ')[0] || '',
+                lastName: name?.split(' ').slice(1).join(' ') || '',
+                firebaseUid: uid || '',
                 isGuest: false
               });
-              console.log('Successfully created new user from Firebase auth:', email);
+              
+              console.log('Successfully created new user from Google auth');
             } catch (createError) {
-              console.error('Failed to create user from Firebase token:', createError);
+              console.error('Failed to create user from Google token:', createError);
             }
           }
           
+          // Standard error if all approaches fail
           if (!user) {
             console.error('Could not find or create user for email:', email);
             return res.status(401).json({ error: 'User not found and could not be created' });

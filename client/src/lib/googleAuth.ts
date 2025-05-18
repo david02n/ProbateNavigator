@@ -41,19 +41,61 @@ export async function signInWithGoogle() {
     if (isMobile) {
       console.log('Using redirect method for mobile authentication');
       
-      // Set return URL in state parameter
+      // Capture return URL - full URL including protocol is most reliable on mobile
+      const returnUrl = window.location.href;
+      localStorage.setItem('redirect_return_url', returnUrl);
+      
+      // Create a state parameter that will survive the redirect
       const state = JSON.stringify({
-        returnUrl: window.location.pathname
+        returnUrl: window.location.href,
+        timestamp: Date.now(),
+        isMobile: true
       });
       
-      // Configure provider for mobile
+      // Configure provider for mobile with extra parameters
       googleProvider.setCustomParameters({
         prompt: 'select_account',
-        state
+        state,
+        // For iOS, add these parameters for better handling
+        iosId: 'org.reactjs.native.probateswift', 
+        app_id: 'probateswift',
+        // Add login_hint if we have a previous email from localStorage
+        ...(localStorage.getItem('mobile_last_email') ? 
+          { login_hint: localStorage.getItem('mobile_last_email') } : {})
       });
       
-      // Start redirect flow
-      await signInWithRedirect(auth, googleProvider);
+      // For iOS, specially handle the redirect
+      if (isIOS) {
+        console.log('iOS device detected, using special handling');
+        
+        try {
+          // First try popup as iOS Safari sometimes blocks redirects
+          console.log('First attempting popup method for iOS');
+          const result = await signInWithPopup(auth, googleProvider);
+          if (result) {
+            console.log('iOS popup authentication succeeded');
+            return result;
+          }
+        } catch (iosPopupError) {
+          console.log('iOS popup failed, falling back to redirect:', iosPopupError);
+          // Fall back to redirect if popup fails
+          await signInWithRedirect(auth, googleProvider);
+          return null;
+        }
+      }
+      
+      // For non-iOS mobile, use redirect flow
+      console.log('Starting mobile redirect authentication flow');
+      try {
+        // Start redirect flow
+        await signInWithRedirect(auth, googleProvider);
+      } catch (redirectError) {
+        console.error('Error starting redirect flow:', redirectError);
+        // If redirect fails, try popup as last resort
+        console.log('Attempting popup as fallback for mobile');
+        return await signInWithPopup(auth, googleProvider);
+      }
+      
       return null; // Function exits here during redirect
     }
     

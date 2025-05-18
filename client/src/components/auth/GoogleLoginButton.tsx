@@ -16,6 +16,10 @@ const GoogleLoginButton = ({ className = '' }: GoogleLoginButtonProps) => {
     try {
       setIsLoading(true);
       
+      // Detect mobile device
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+      
       // Get domain information for debugging and analytics
       const domain = window.location.hostname;
       const fullHost = window.location.host;
@@ -24,7 +28,20 @@ const GoogleLoginButton = ({ className = '' }: GoogleLoginButtonProps) => {
       
       console.log('Starting Google login from:', fullHost);
       console.log('Environment type:', isProd ? 'Production' : (isReplit ? 'Replit' : 'Development'));
+      console.log('Device type:', isMobile ? (isIOS ? 'iOS' : 'Mobile') : 'Desktop');
       console.log('Current path:', window.location.pathname);
+      
+      // For mobile devices, add a returnUrl parameter to help with redirects
+      if (isMobile) {
+        // Store current URL in localStorage to help with redirect after auth
+        localStorage.setItem('auth_return_url', window.location.href);
+        localStorage.setItem('auth_timestamp', Date.now().toString());
+        
+        // On mobile, especially iOS, set a flag to help with popup/redirect handling
+        localStorage.setItem('mobile_auth_pending', 'true');
+        
+        console.log('Mobile device detected, using special auth flow');
+      }
       
       // Use the signInWithGoogle function from googleAuth.ts
       const result = await signInWithGoogle();

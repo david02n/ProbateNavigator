@@ -112,15 +112,17 @@ export function createFirebaseAuthMiddleware() {
           console.log('Firebase auth: Updated user with Firebase UID');
         }
         
-        // STEP 5: Session compatibility - maintain for backward compatibility
-        // Check if session exists before trying to set properties
-        if (req.session) {
-          req.session.userId = user.id;
-          req.session.isLoggedIn = true;
-          req.session.firebaseUid = uid as string;
-        } else {
-          console.log('Firebase auth: Session object not available for token auth');
-        }
+        // SKIP Session management for token-based auth in production
+        // This solves the cross-domain issue where cookies/sessions don't work
+        
+        // We're now using pure token-based auth for production
+        // Just attach the user to the request object and let routes use it
+        
+        // CRITICAL: Even if we can't set session properties, we still 
+        // want to attach the authenticated user to the request
+        
+        // Set a property that routes can check for authentication
+        req.user = user;
         
         // Attach user to request for route handlers
         req.user = user;

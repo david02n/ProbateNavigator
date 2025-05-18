@@ -75,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google Authentication endpoint
   app.post('/api/auth/google', async (req: Request, res: Response) => {
     try {
-      const { idToken } = req.body;
+      const { idToken, domain, origin, isMobile: clientIsMobile } = req.body;
       
       // Log request details for debugging
       console.log('Google auth request received');
@@ -86,7 +86,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(userAgent);
       const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
       console.log(`Is Mobile: ${isMobile ? 'Yes' : 'No'}${isIOS ? ' (iOS)' : ''}`);
+      console.log(`Client-reported Mobile: ${clientIsMobile ? 'Yes' : 'No'}`);
       console.log(`Origin: ${req.headers.origin || 'Not provided'}`);
+      console.log(`Client-reported Origin: ${origin || 'Not provided'}`);
+      console.log(`Client-reported Domain: ${domain || 'Not provided'}`);
       console.log(`Host: ${req.headers.host || 'Not provided'}`);
       console.log(`Referer: ${req.headers.referer || 'Not provided'}`);
       

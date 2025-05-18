@@ -1,0 +1,114 @@
+✅ TL;DR:
+The issue is not caused by Google, but by your backend session not recognizing the user as authenticated in production.
+
+Your app is setting session cookies (probswft.sid, etc.), but when your frontend hits /api/user, the backend still returns 401 Unauthorized. That strongly suggests:
+
+🔍 Root Cause: Session or Auth Cookie Not Persisting/Matching
+🚨 Specifically:
+The request is same-origin (https://probateswift.com/api/user from https://probateswift.com), and
+
+The cookie (probswft.sid=...) is being sent, but
+
+The session is not recognized on the server → leading to a 401 Unauthorized.
+
+🔎 So what's going wrong?
+✅ Your client:
+✅ Sends session cookies (connect.sid, probswft.sid)
+
+✅ Calls the correct URL (/api/user)
+
+✅ Uses HTTPS and correct headers
+
+⚠️ Your server likely:
+❌ Cannot find a matching session for that cookie
+
+OR 🔒 Doesn’t deserialize the session into an authenticated user
+
+🧪 Test Hypothesis
+In Express/Node, if you're using express-session or similar:
+
+js
+Copy
+Edit
+app.use(session({
+  secret: 'yourSecret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    sameSite: 'None'
+  }
+}));
+Then in your /api/user route, you likely check:
+
+js
+Copy
+Edit
+app.get('/api/user', (req, res) => {
+  if (req.session.user) {
+    res.json({ user: req.session.user });
+  } else {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+});
+So if req.session.user is not being populated, either:
+
+🔸 The user isn’t being added to req.session.user on login
+
+🔸 You’re using a different session store between login and GET /api/user
+
+🔸 The session cookie is not being deserialized correctly (e.g., session secret mismatch)
+
+✅ Suggested Fix Steps
+1. ✅ Check Session Persistence
+Are you using an in-memory session store in production?
+
+❌ This won’t persist across server restarts or across multiple instances.
+
+✅ Use connect-redis, connect-mongo, or Firebase-compatible storage if scaling.
+
+2. ✅ Ensure You’re Saving Session on Login
+Make sure after Google Auth login, you explicitly store the user in the session:
+
+js
+Copy
+Edit
+app.post('/auth/callback', async (req, res) => {
+  // After verifying user with Google
+  req.session.user = { id: user.uid, email: user.email };
+  req.session.save(() => {
+    res.redirect('/dashboard');
+  });
+});
+3. ✅ Verify Session Secret & Cookie Parser
+Make sure your session secret is consistent across environments:
+
+js
+Copy
+Edit
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  ...
+}));
+If it's undefined in production, cookies won’t decrypt → sessions won’t load.
+
+✅ Confirm with Logging
+Add logs like this to your /api/user route:
+
+js
+Copy
+Edit
+app.get('/api/user', (req, res) => {
+  console.log('Session:', req.session);
+  if (req.session.user) {
+    return res.json({ user: req.session.user });
+  }
+  console.warn('Unauthorized request - session not found');
+  res.status(401).json({ error: 'Unauthorized' });
+});
+Summary
+✅ Working	⚠️ Root Issue
+Cookies are sent	Session not being recognized
+HTTPS, same-origin	Likely session.user not set or not persisted
+Firebase Auth login seems okay	But backend doesn’t carry over session state

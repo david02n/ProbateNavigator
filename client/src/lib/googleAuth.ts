@@ -154,7 +154,18 @@ export async function handleRedirectResult() {
       console.log('ID token retrieved, sending to backend');
       
       // Send the token to your backend via HTTPS
-      const response = await fetch('/api/auth/google', {
+      // Include the domain information to help with debugging
+      const domain = window.location.hostname;
+      const isProd = domain.includes('probateswift.com');
+      
+      // For production, use the full URL to avoid any proxy issues
+      const apiUrl = isProd 
+        ? 'https://probateswift.com/api/auth/google'
+        : '/api/auth/google';
+        
+      console.log(`Using API URL: ${apiUrl} for domain: ${domain}`);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +175,11 @@ export async function handleRedirectResult() {
           // Include basic user info as fallback if token verification fails
           email: user.email,
           displayName: user.displayName,
-          photoURL: user.photoURL 
+          photoURL: user.photoURL,
+          // Include domain information to help server with cookie settings
+          domain: window.location.hostname,
+          origin: window.location.origin,
+          isMobile: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
         }),
         credentials: 'include', // Important for cookies
       });

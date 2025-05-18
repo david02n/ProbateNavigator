@@ -4,14 +4,14 @@ import "./index.css";
 import { registerServiceWorker } from "./serviceWorkerRegistration";
 import { getAuth } from "firebase/auth";
 
-// CRITICAL FIX: Redirect from replit.app to probateswift.com
+// REVISED APPROACH: Use replit.app domain since authentication is working there
 // This is necessary because Firebase auth doesn't work across domains
-if (window.location.hostname.includes('replit.app')) {
-  console.log('DOMAIN REDIRECT: Redirecting from replit.app to probateswift.com');
+if (window.location.hostname.includes('probateswift.com')) {
+  console.log('DOMAIN REDIRECT: Redirecting from probateswift.com to replit.app (where auth works)');
   // Preserve the path when redirecting
-  window.location.href = 'https://probateswift.com' + window.location.pathname + window.location.search;
+  window.location.href = 'https://probateswift.replit.app' + window.location.pathname + window.location.search;
 } else {
-  console.log('DOMAIN CHECK: Already on correct domain: ' + window.location.hostname);
+  console.log('DOMAIN CHECK: Using replit.app domain where auth is working: ' + window.location.hostname);
 }
 
 // DIRECT TOKEN FIX FOR ALL API REQUESTS - v1.0.15-May18-2359

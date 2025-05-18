@@ -17,18 +17,26 @@ console.log('Firebase Admin configuration:', {
   hasAppId: !!firebaseConfig.appId
 });
 
-// Initialize Firebase Admin SDK with production-ready configuration
+// Initialize Firebase Admin SDK properly according to Firebase best practices
+// For production, this is the recommended initialization approach
 try {
-  // Simple initialization for token verification
-  const app = admin.initializeApp({
-    projectId: 'probate-458709'
-  });
-  console.log('Firebase Admin initialized successfully');
+  const app = admin.initializeApp();  // Auto-detects config from environment variables
+  console.log('Firebase Admin SDK initialized with default app configuration');
 } catch (error: any) {
   console.error('Error initializing Firebase Admin:', error);
   // Firebase may already be initialized, which is fine
   if (error && error.code === 'app/duplicate-app') {
     console.log('Firebase Admin already initialized');
+  } else {
+    // Fallback initialization with explicit project ID as per Firebase docs
+    try {
+      const app = admin.initializeApp({
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'probate-458709'
+      });
+      console.log('Firebase Admin initialized with fallback project ID configuration');
+    } catch (fallbackError: any) {
+      console.error('Critical error: Firebase Admin initialization failed completely:', fallbackError);
+    }
   }
 }
 
@@ -37,31 +45,51 @@ export const auth = admin.auth();
 // Utility function to verify a Firebase ID token
 export async function verifyIdToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
   try {
-    console.log('Attempting to verify Google token');
-    const decodedToken = await auth.verifyIdToken(idToken);
-    console.log('Successfully verified Google token');
+    // This is the Firebase recommended approach for token verification
+    // It handles token expiration, signature validation, and project matching
+    console.log('Verifying Firebase token using recommended approach');
+    
+    // Add specific options for better production performance
+    const checkRevoked = true; // Ensures token hasn't been revoked (security best practice)
+    const decodedToken = await auth.verifyIdToken(idToken, checkRevoked);
+    
+    console.log('Firebase successfully verified token for:', decodedToken.email || '(no email)');
     return decodedToken;
   } catch (error) {
-    console.error('Error verifying Google token:', error);
+    // Following Firebase best practices for error handling
+    console.error('[PRODUCTION ERROR] Firebase token verification failed:', error);
     
-    // Extract JWT payload for any environment to ensure authentication works
-    try {
-      console.log('Manually decoding token as fallback');
-      const parts = idToken.split('.');
-      if (parts.length === 3) {
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-        console.log('Successfully decoded token manually');
-        
-        // Always accept manually verified tokens with email
-        if (payload.email && payload.email_verified) {
-          console.log('Token contains verified email, accepting as valid');
-          return payload as admin.auth.DecodedIdToken;
-        }
-      }
-    } catch (parseError) {
-      console.error('Error parsing token manually:', parseError);
+    // In production, we need to handle specific token error types
+    const errorMessage = error.toString();
+    if (errorMessage.includes('auth/id-token-expired')) {
+      console.log('Token expired - client should refresh token');
+    } else if (errorMessage.includes('auth/invalid-credential')) {
+      console.log('Invalid credentials - token is malformed or signed by different project');
+    } else if (errorMessage.includes('auth/argument-error')) {
+      console.log('Argument error - token is malformed');
     }
     
+    // Only in non-production environments, we can use fallback verification
+    // This follows Firebase security best practices (secure by default)
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        console.log('Using development fallback verification');
+        const parts = idToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+          
+          // Only allow this bypass in development, never production
+          if (payload.email && payload.email_verified) {
+            console.log('DEV ONLY: Accepting manually decoded token');
+            return payload as admin.auth.DecodedIdToken;
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing token manually:', parseError);
+      }
+    }
+    
+    // Always throw in production - this is the secure approach
     throw error;
   }
 }

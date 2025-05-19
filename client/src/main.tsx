@@ -4,9 +4,23 @@ import "./index.css";
 import { registerServiceWorker } from "./serviceWorkerRegistration";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
-// STANDARD APPROACH: We want to use probateswift.com as our primary domain
-// Just log the domain for debugging purposes
-console.log('DOMAIN CHECK: Current domain is: ' + window.location.hostname);
+// DOMAIN REDIRECTS FOR CONSISTENCY
+// Redirect www.probateswift.com to probateswift.com (no www)
+const hostname = window.location.hostname;
+console.log('DOMAIN CHECK: Current domain is: ' + hostname);
+
+// Handle redirects for consistency
+if (hostname.startsWith('www.')) {
+  // Remove the www prefix from the domain
+  const nonWwwDomain = hostname.replace(/^www\./, '');
+  console.log(`DOMAIN REDIRECT: Redirecting from ${hostname} to ${nonWwwDomain}`);
+  
+  // Preserve the path and query parameters when redirecting
+  window.location.href = window.location.href.replace(hostname, nonWwwDomain);
+} else {
+  console.log('DOMAIN CHECK: No www prefix detected, no redirect needed');
+}
+
 console.log('AUTHENTICATION FIX: Ensuring tokens work on probateswift.com');
 
 // Set up auth state listener for debugging 

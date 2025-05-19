@@ -4,6 +4,7 @@ import { Redirect, useLocation, useRoute } from "wouter";
 import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 import { auth } from "@/lib/firebase";
 import { getRedirectResult } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 // Extend Window interface to include our shared functions
 declare global {
@@ -66,6 +67,7 @@ interface AuthPageProps {
 
 const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("login");
   const [location] = useLocation();
   const [isMobile, setIsMobile] = useState(false);
@@ -93,32 +95,65 @@ const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
     console.log('Auth return parameter:', authReturn);
     
     // Check for redirect results - this is critical for both mobile and production logins
-    console.log('Checking for redirect authentication result...');
+    console.log('Checking for redirect authentication result v1.0.18');
     
     // Process redirect result - this is the main authentication flow for mobile and production
     (async () => {
       try {
-        // For production domains, always check for redirect result
-        const isProductionDomain = window.location.hostname.includes('probateswift.com');
-        console.log('Authentication Environment:', isProductionDomain ? 'Production' : 'Development/Testing');
+        // Enhanced debugging for the critical authentication process
+        console.log('AUTH FIX v1.0.18: Processing Google redirect on domain:', window.location.hostname);
+        console.log('AUTH FIX v1.0.18: Full URL:', window.location.href);
         
-        // Get the redirect result directly from Firebase - this is the critical fix
+        // This is the critical line that processes the redirect from Google
+        // It must run on page load to complete the OAuth flow
         const result = await getRedirectResult(auth);
         
-        if (result) {
-          console.log('Authentication redirect processed successfully');
+        if (result && result.user) {
+          console.log('AUTH FIX v1.0.18: Authentication successful! User:', result.user.email);
           
-          // Show success notification
-          if (isMobileDevice) {
-            // On mobile, use a simpler approach
-            alert('Login successful');
+          // Get the token to send to the backend
+          const idToken = await result.user.getIdToken();
+          console.log('AUTH FIX v1.0.18: Token obtained, length:', idToken.length);
+          
+          // Store token in localStorage for API requests
+          localStorage.setItem('firebase_id_token', idToken);
+          
+          // Call the backend to establish the session
+          try {
+            console.log('AUTH FIX v1.0.18: Sending token to backend');
+            const response = await fetch('/api/auth/google', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+              },
+              body: JSON.stringify({
+                idToken,
+                email: result.user.email,
+                displayName: result.user.displayName
+              }),
+              credentials: 'include'
+            });
+            
+            if (response.ok) {
+              console.log('Backend authentication successful');
+              console.log('Google login successful, redirecting to dashboard');
+              
+              // Redirect to dashboard after successful login
+              window.location.href = '/';
+            } else {
+              console.error('Backend authentication failed:', await response.text());
+              toast({
+                title: "Server Authentication Error",
+                description: "Your Google login was successful, but the server couldn't complete authentication.",
+                variant: "destructive",
+              });
+            }
+          } catch (backendError) {
+            console.error('Error calling backend:', backendError);
           }
-          
-          // Always use window.location for redirecting after authentication
-          // This ensures cookies are properly set before navigation
-          console.log('Redirecting to dashboard after successful authentication');
-          window.location.href = '/';
         } else {
+          console.log('AUTH FIX v1.0.18: No redirect result found - normal page load');
           console.log('No redirect result found - user may need to log in');
         }
       } catch (error) {

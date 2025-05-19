@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { FcGoogle } from 'react-icons/fc';
 import { signInWithGoogle } from '@/lib/googleAuth';
 import { useToast } from '@/hooks/use-toast';
+import { auth, googleProvider } from '@/lib/firebase';
+import { signInWithRedirect } from 'firebase/auth';
 
 interface GoogleLoginButtonProps {
   className?: string;
@@ -31,19 +33,26 @@ const GoogleLoginButton = ({ className = '' }: GoogleLoginButtonProps) => {
       console.log('Device type:', isMobile ? (isIOS ? 'iOS' : 'Mobile') : 'Desktop');
       console.log('Current path:', window.location.pathname);
       
-      // For mobile devices, add a returnUrl parameter to help with redirects
-      if (isMobile) {
-        // Store current URL in localStorage to help with redirect after auth
-        localStorage.setItem('auth_return_url', window.location.href);
-        localStorage.setItem('auth_timestamp', Date.now().toString());
-        
-        // On mobile, especially iOS, set a flag to help with popup/redirect handling
-        localStorage.setItem('mobile_auth_pending', 'true');
-        
-        console.log('Mobile device detected, using special auth flow');
-      }
+      // Store the current URL as return URL
+      localStorage.setItem('auth_return_url', window.location.href);
+      localStorage.setItem('auth_timestamp', Date.now().toString());
       
-      // Use the signInWithGoogle function from googleAuth.ts
+      // Configure Google provider parameters
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      console.log('DIRECT FIX: Using signInWithRedirect directly for more reliable auth flow');
+      
+      // Use Firebase's signInWithRedirect directly
+      // This is more reliable than using our wrapper function
+      await signInWithRedirect(auth, googleProvider);
+      
+      return;
+      
+      // The following code will only execute if the redirect fails
+      // as a fallback, try the original method
+      console.log('Redirect failed, falling back to original method');
       const result = await signInWithGoogle();
       
       if (result) {

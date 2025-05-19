@@ -1,0 +1,78 @@
+🧠 Summary of the Problem
+Symptom:
+From https://probateswift.com/auth, users try to log in with Google, but don’t even reach the Google account selection page.
+
+Previously:
+Login did redirect to Google, but wouldn’t persist session or would 401 on /api/user.
+
+Now:
+Login flow appears broken earlier — the Google login prompt never shows up.
+
+🧪 Root Cause Likely Candidates
+Here are the top suspects:
+
+1. Browser Blocking Popups/Redirects
+If you're using signInWithPopup() and the call is not user-triggered (e.g. behind a useEffect or automatic redirect), Chrome will block it silently. Use signInWithRedirect() instead.
+
+2. Incorrect Firebase authDomain Config
+Ensure authDomain in your Firebase config matches the origin of the current site:
+
+ts
+Copy
+Edit
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "probateswift.com", // must match current domain
+  ...
+}
+If you're on https://www.probateswift.com, it must be www.probateswift.com, or add both domains in Firebase Console (which you did).
+
+3. You're Trying to Use Redirect on an Unauthorised Domain
+If authDomain is misconfigured (e.g. probateswift.replit.app while you're on probateswift.com), Firebase won't initiate the auth flow.
+Fix: Set authDomain dynamically based on window.location.hostname or set up proper environment config.
+
+4. Missing Click Handler for Redirect Trigger
+If the login function isn't explicitly triggered by a user interaction (e.g. button click), browsers will block the redirect.
+
+You need something like:
+
+ts
+Copy
+Edit
+const handleLogin = () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithRedirect(provider);
+};
+Then in /auth, you must call firebase.auth().getRedirectResult() to complete login.
+
+✅ Proposed Fix Instructions (for Dev)
+1. Confirm Firebase config uses correct authDomain:
+
+ts
+Copy
+Edit
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "probateswift.com", // ✅ must match deployment origin
+  ...
+};
+2. On Login Button: Trigger signInWithRedirect
+
+ts
+Copy
+Edit
+const provider = new firebase.auth.GoogleAuthProvider();
+firebase.auth().signInWithRedirect(provider);
+3. On /auth load: Finalize login
+
+ts
+Copy
+Edit
+firebase.auth().getRedirectResult().then((result) => {
+  if (result.user) {
+    // user is signed in
+    // maybe redirect to app
+  }
+});
+4. Optional: Ensure both probateswift.com and www.probateswift.com are in Firebase → Auth → Authorized domains (✅ already done).
+

@@ -113,8 +113,11 @@ type AdoptedRelative = {
   direction: 'in' | 'out';
 };
 
-const DeceasedDetailsForm: React.FC = () => {
-  const { personId } = useParams();
+interface DeceasedDetailsFormProps {
+  personId: number;
+}
+
+const DeceasedDetailsForm: React.FC<DeceasedDetailsFormProps> = ({ personId }) => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);

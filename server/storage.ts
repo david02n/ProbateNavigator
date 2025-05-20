@@ -128,6 +128,7 @@ export class MemStorage implements IStorage {
     this.assessments = new Map();
     this.probateCases = new Map();
     this.executors = new Map();
+    this.deceasedFormFields = new Map();
     this.estateAssets = new Map();
     this.estateLiabilities = new Map();
     this.documents = new Map();
@@ -628,6 +629,65 @@ export class MemStorage implements IStorage {
       return this.deceasedFormFields.get(personId);
     }
     return undefined;
+  }
+
+  async updateDeceasedFormFields(personId: number, data: Partial<InsertDeceasedFormFields>): Promise<DeceasedFormFields | undefined> {
+    const existingFields = this.deceasedFormFields.get(personId);
+    if (!existingFields) {
+      return undefined;
+    }
+    
+    const updatedFields: DeceasedFormFields = {
+      ...existingFields,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    this.deceasedFormFields.set(personId, updatedFields);
+    return updatedFields;
+  }
+  
+  async isDeceasedFormFieldsComplete(personId: number): Promise<boolean> {
+    const fields = await this.getDeceasedFormFields(personId);
+    if (!fields) {
+      return false;
+    }
+    
+    // Check required fields
+    if (!fields.dateOfBirth || !fields.dateOfDeath || fields.maritalStatus === null) {
+      return false;
+    }
+    
+    // Check conditional fields
+    if (fields.maritalStatus === 'married' && !fields.marriedDate) {
+      return false;
+    }
+    
+    if (fields.maritalStatus === 'divorced' && (!fields.divorcedDate || !fields.divorceCourt)) {
+      return false;
+    }
+    
+    if (fields.maritalStatus === 'separated' && (!fields.separatedDate || !fields.separationCourt)) {
+      return false;
+    }
+    
+    if (fields.hadForeignAssets && !fields.foreignAssetValueGbp) {
+      return false;
+    }
+    
+    if (fields.wasKnownByOtherNames && (!fields.otherNamesHeldAssets || fields.otherNamesHeldAssets.length === 0)) {
+      return false;
+    }
+    
+    if (fields.hasAdoptionHistory && (!fields.adoptedRelatives || fields.adoptedRelatives.length === 0)) {
+      return false;
+    }
+    
+    return true;
+  }
+  
+  async getPeopleByCaseId(caseId: number): Promise<Executor[]> {
+    return Array.from(this.executors.values()).filter(executor => executor.caseId === caseId);
   }
 
   async createDeceasedFormFields(data: InsertDeceasedFormFields): Promise<DeceasedFormFields> {

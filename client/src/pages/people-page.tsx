@@ -501,6 +501,9 @@ const PeoplePage: React.FC = () => {
   const professionals = processedExecutors.filter(exec => exec.isLegalProfessional);
   const regularExecutors = processedExecutors.filter(exec => !exec.isLegalProfessional);
   
+  // Check if the current user has already been added as an executor
+  const userAlreadyAdded = user && user.email && regularExecutors.some(exec => exec.email === user.email);
+  
   // Handle opening person form
   const handleAddPerson = () => {
     if (!activeCaseId) {
@@ -753,9 +756,21 @@ const PeoplePage: React.FC = () => {
               {/* Quick Actions Row */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <Button 
-                  variant="outline" 
-                  className="flex-1 flex items-center justify-center gap-2 border-dashed border-primary/50 hover:bg-primary/5"
+                  variant={userAlreadyAdded ? "secondary" : "outline"} 
+                  className={`flex-1 flex items-center justify-center gap-2 ${
+                    userAlreadyAdded 
+                      ? "bg-green-50 border-green-200 hover:bg-green-100 cursor-default" 
+                      : "border-dashed border-primary/50 hover:bg-primary/5"
+                  }`}
                   onClick={() => {
+                    if (userAlreadyAdded) {
+                      toast({
+                        title: "Already added",
+                        description: "You've already added yourself to this case",
+                      });
+                      return;
+                    }
+                    
                     if (!activeCaseId) {
                       toast({
                         title: "No probate case",
@@ -779,8 +794,12 @@ const PeoplePage: React.FC = () => {
                     setIsPersonModalOpen(true);
                   }}
                 >
-                  <UserPlus className="h-5 w-5 text-primary" />
-                  <span>Add Yourself</span>
+                  {userAlreadyAdded ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <UserPlus className="h-5 w-5 text-primary" />
+                  )}
+                  <span>{userAlreadyAdded ? "Added" : "Add Yourself"}</span>
                 </Button>
                 
                 <Button 

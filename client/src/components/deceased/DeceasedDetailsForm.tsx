@@ -56,10 +56,14 @@ import { cn } from '@/lib/utils';
 // Define schema for the form
 const deceasedFormSchema = z.object({
   // Basic Information
-  dateOfBirth: z.date().optional(),
-  dateOfDeath: z.date().optional(),
-  birthPlace: z.string().optional(),
-  deathPlace: z.string().optional(),
+  dateOfBirth: z.date({
+    required_error: "Date of birth is required",
+  }),
+  dateOfDeath: z.date({
+    required_error: "Date of death is required",
+  }),
+  birthPlace: z.string().min(1, "Birth place is required"),
+  deathPlace: z.string().min(1, "Death place is required"),
   
   // Other Names
   wasKnownByOtherNames: z.boolean().default(false),
@@ -69,10 +73,14 @@ const deceasedFormSchema = z.object({
   })).optional(),
   
   // Domicile
-  domicileInEnglandOrWales: z.boolean().optional(),
+  domicileInEnglandOrWales: z.boolean({
+    required_error: "Please specify if the person was domiciled in England or Wales",
+  }),
   
   // Marital Status
-  maritalStatus: z.enum(['never_married', 'married', 'widowed', 'divorced', 'separated']).optional(),
+  maritalStatus: z.enum(['never_married', 'married', 'widowed', 'divorced', 'separated'], {
+    required_error: "Marital status is required",
+  }),
   marriedDate: z.date().optional().nullable(),
   divorcedDate: z.date().optional().nullable(),
   divorceCourt: z.string().optional().nullable(),
@@ -84,10 +92,14 @@ const deceasedFormSchema = z.object({
   foreignAssetValueGbp: z.string().optional().nullable(),
   
   // Land Settled
-  landWasSettled: z.boolean().optional(),
+  landWasSettled: z.boolean({
+    required_error: "Please specify if the land was settled",
+  }),
   
   // Executors Applying
-  executorsApplying: z.boolean().optional(),
+  executorsApplying: z.boolean({
+    required_error: "Please specify if executors are applying",
+  }),
   
   // Adoption History
   hasAdoptionHistory: z.boolean().default(false),
@@ -96,7 +108,59 @@ const deceasedFormSchema = z.object({
     relationship: z.string().optional(),
     direction: z.enum(['in', 'out']).optional()
   })).optional(),
-});
+})
+.refine(
+  (data) => {
+    // If married, require marriage date
+    if (data.maritalStatus === 'married') {
+      return !!data.marriedDate;
+    }
+    return true;
+  },
+  {
+    message: "Marriage date is required if marital status is married",
+    path: ["marriedDate"]
+  }
+)
+.refine(
+  (data) => {
+    // If divorced, require divorce date and court
+    if (data.maritalStatus === 'divorced') {
+      return !!data.divorcedDate && !!data.divorceCourt;
+    }
+    return true;
+  },
+  {
+    message: "Divorce date and court are required if marital status is divorced",
+    path: ["divorcedDate"]
+  }
+)
+.refine(
+  (data) => {
+    // If separated, require separation date and court
+    if (data.maritalStatus === 'separated') {
+      return !!data.separatedDate && !!data.separationCourt;
+    }
+    return true;
+  },
+  {
+    message: "Separation date and court are required if marital status is separated",
+    path: ["separatedDate"]
+  }
+)
+.refine(
+  (data) => {
+    // If had foreign assets, require value
+    if (data.hadForeignAssets) {
+      return !!data.foreignAssetValueGbp;
+    }
+    return true;
+  },
+  {
+    message: "Foreign asset value is required if person had foreign assets",
+    path: ["foreignAssetValueGbp"]
+  }
+);
 
 type DeceasedFormValues = z.infer<typeof deceasedFormSchema>;
 

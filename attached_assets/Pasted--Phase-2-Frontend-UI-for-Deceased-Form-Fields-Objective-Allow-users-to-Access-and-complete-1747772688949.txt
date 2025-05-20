@@ -1,0 +1,126 @@
+🧩 Phase 2: Frontend – UI for Deceased Form Fields
+🎯 Objective
+Allow users to:
+
+Access and complete the full set of deceased-specific questions
+
+See and update inferred or pre-filled answers (e.g. from death certificate)
+
+Track completion status visibly in the People tab
+
+🧱 1. Prerequisites
+Phase 1 must be complete with:
+
+/deceased-form-fields/:personId GET
+
+/deceased-form-fields/:personId PATCH
+
+/deceased-form-fields/:personId/complete GET
+
+🧑‍💻 2. Frontend Scope
+✅ People Tab Integration
+Feature	Description
+Status Indicator	For each person where role === 'deceased', show ✅ or ⚠️ based on completion
+CTA Button	"Complete deceased details" if incomplete; "Edit details" if complete
+Routing	Clicking the button routes to /people/:personId/deceased-details
+
+✅ Deceased Details Form Page
+Route: /people/:personId/deceased-details
+
+Features:
+ Fetch deceasedFormFields data on load
+
+ Use form framework (react-hook-form recommended)
+
+ Show "suggested" values if prefilled (e.g. from death cert)
+
+ Auto-save or allow explicit save
+
+Required Field Groups:
+Dates
+
+Date of birth (required)
+
+Date of death (required)
+
+Other Names
+
+Was known by other names (boolean)
+
+ IF true → list of full names
+
+Domicile
+
+Lived or intended to return to England/Wales? (boolean)
+
+Marital Status
+
+Enum select: never_married, widowed, married, divorced, separated
+
+ Conditional follow-ups (dates, courts)
+
+Foreign Assets
+
+Owned foreign assets? (boolean)
+
+ IF true → numeric value input (£)
+
+Land Settled
+
+Was land settled under the Settled Land Act? (boolean)
+
+Executors Applying
+
+Boolean (pre-filled suggestion allowed)
+
+Adoption History
+
+Was anyone legally adopted in/out? (boolean)
+
+ IF true → repeater: name, relationship, in/out dropdown
+
+⚙️ Save & Submit Logic
+Save form on:
+
+Field blur (optional)
+
+Section submit (recommended)
+
+Explicit save button
+
+Form should display errors inline
+
+PATCH partial updates to /deceased-form-fields/:personId
+
+✅ 3. Completion Status Tracking
+ On form mount or submit, call:
+
+GET /deceased-form-fields/:personId/complete
+
+Update People tab or milestone tracker state accordingly
+
+ Display top-of-page banner if incomplete:
+“You still have required questions to complete this section.”
+
+🧪 4. Acceptance Criteria
+Area	Requirement
+🔍 UI Load	Form loads with data from API
+✅ Validation	Required fields and conditional logic enforced client-side
+💾 Save Logic	PATCH API is called with updated values
+🔄 Completion Logic	GET /complete result updates visible status
+🔁 Reusability	Component-based form structure (grouped by field topic)
+🧠 UX	User sees suggestions and can override them cleanly
+
+💡 Developer Notes
+Highlight extracted fields visually (e.g. tag with “suggested” or “from document”)
+
+Consider using a Stepper UI if the form gets long (e.g. Material UI Stepper, Radix Tabs)
+
+Store draft state locally in memory and debounce API calls if using auto-save
+
+🧑‍🏫 Optional Enhancements (Future or Phase 2.1)
+Feature	Purpose
+Field audit log	Show history of user overrides or document-derived suggestions
+“Copy from...” button	Pull fields from death certificate record manually
+Validation preview	Show completeness summary before submission
+

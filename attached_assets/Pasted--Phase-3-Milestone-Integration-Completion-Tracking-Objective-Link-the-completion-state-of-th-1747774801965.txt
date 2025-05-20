@@ -1,0 +1,74 @@
+🚦 Phase 3: Milestone Integration & Completion Tracking
+🎯 Objective
+Link the completion state of the deceasedFormFields with:
+
+The Milestone Tracker (e.g. case progress / dashboard)
+
+The People tab (to highlight completeness per person)
+
+This ensures users are clearly guided through what’s done and what still needs action.
+
+🧱 1. Backend Enhancements
+✅ Add Completion API Logic (already partially implemented)
+Ensure that:
+
+GET /api/deceased-form-fields/:personId/complete
+
+Returns { complete: boolean }
+
+Logic matches Phase 1 field validation rules
+
+Can be reused in Milestone API or client-side polling
+
+🎯 2. Milestone Tracker Updates
+✅ Define New Milestone Item
+Milestone Title: “Complete deceased person’s legal questionnaire”
+
+Linked to: deceasedFormFields of person with is_deceased = true
+
+Completion logic:
+
+Milestone is complete when:
+
+GET /api/deceased-form-fields/:personId/complete → { complete: true }
+
+🧩 Implementation Tasks
+Task	Notes
+[ ] Add new milestone config	If milestone system is schema/config driven
+[ ] Wire API call to check complete status	Per deceased person
+[ ] Mark as ✅ or ⚠️ in UI	Use visual indicator and text summary
+[ ] Include CTA to jump to form	Button: "Complete now" → /people/:personId/deceased-details
+
+🧑‍🤝‍🧑 3. People Tab UX Update
+For each person with role = deceased:
+
+Column	Display
+Status	✅ Completed or ⚠️ Incomplete (check via API)
+CTA	“Complete details” or “Edit” (links to form page)
+Tooltip	Show list of incomplete sections (optional polish)
+
+🧪 4. Acceptance Criteria
+Feature	Requirement
+Milestone appears	Only when deceased is added
+Status reflects data	Milestone status updates after form is saved
+People tab indicators	Status visible and links to form
+No false positives	Conditional field rules respected
+Regression-safe	Milestone changes don’t affect unrelated steps
+
+🧠 Optional Enhancements (Phase 3.1)
+Feature	Benefit
+Polling or subscriptions	Live update of milestone status after save
+Per-field completeness hints	Show checkmarks within form itself
+Email nudges / reminders	If form incomplete after X days
+
+🛠️ Dev Implementation Order
+✅ Finalize completion logic (in isDeceasedFormFieldsComplete)
+
+✅ Expose this via API (already done in Phase 1)
+
+🔄 Update Milestone tracker component
+
+🔄 Update People tab row logic and buttons
+
+🧪 Manual QA (check edge cases)
+

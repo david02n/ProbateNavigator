@@ -718,6 +718,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API routes for evaluation responses (detailed in-app evaluation flow)
+  app.get("/api/evaluation/:caseId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const caseId = parseInt(req.params.caseId, 10);
+      
+      // Verify user owns this case
+      const probateCase = await storage.getProbateCase(caseId);
+      if (!probateCase || probateCase.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Probate case not found" });
+      }
+      
+      const evaluation = await storage.getEvaluationResponse(caseId);
+      res.json(evaluation);
+    } catch (error) {
+      console.error("Error fetching evaluation response:", error);
+      res.status(500).json({ error: "Failed to fetch evaluation response" });
+    }
+  });
+
+  app.post("/api/evaluation/:caseId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const caseId = parseInt(req.params.caseId, 10);
+      const userId = req.user!.id;
+      
+      // Verify user owns this case
+      const probateCase = await storage.getProbateCase(caseId);
+      if (!probateCase || probateCase.userId !== userId) {
+        return res.status(404).json({ error: "Probate case not found" });
+      }
+      
+      // Check if evaluation already exists
+      const existingEvaluation = await storage.getEvaluationResponse(caseId);
+      
+      if (existingEvaluation) {
+        // Update existing evaluation
+        const updatedEvaluation = await storage.updateEvaluationResponse(caseId, {
+          answers: req.body.answers,
+          derivedFlags: req.body.derivedFlags,
+          completedAt: req.body.completed ? new Date() : null
+        });
+        res.json(updatedEvaluation);
+      } else {
+        // Create new evaluation
+        const evaluationData = {
+          userId,
+          probateCaseId: caseId,
+          answers: req.body.answers || {},
+          derivedFlags: req.body.derivedFlags || {},
+          completedAt: req.body.completed ? new Date() : null
+        };
+        
+        const newEvaluation = await storage.createEvaluationResponse(evaluationData);
+        res.status(201).json(newEvaluation);
+      }
+    } catch (error) {
+      console.error("Error saving evaluation response:", error);
+      res.status(500).json({ error: "Failed to save evaluation response" });
+    }
+  });
+
   // API routes for probate cases
   app.get("/api/probate-cases", async (req, res) => {
     if (!req.isAuthenticated()) {

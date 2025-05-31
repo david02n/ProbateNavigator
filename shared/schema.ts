@@ -20,12 +20,25 @@ export const users = pgTable("users", {
 export const assessmentResults = pgTable("assessment_results", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
+  browserSessionId: text("browser_session_id"), // For anonymous assessments
   isProbateRequired: boolean("is_probate_required"),
   probateType: text("probate_type"), // "grant_of_probate", "letters_of_administration", etc.
   hasWill: boolean("has_will"),
   isInsolvent: boolean("is_insolvent"),
   hasDispute: boolean("has_dispute"),
   assessmentData: text("assessment_data"), // JSON string of all answers
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Evaluation responses model - for detailed in-app evaluation flow
+export const evaluationResponses = pgTable("evaluation_responses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  probateCaseId: integer("probate_case_id").references(() => probateCases.id).notNull(),
+  answers: jsonb("answers").$type<Record<string, any>>().notNull().default({}),
+  derivedFlags: jsonb("derived_flags").$type<Record<string, any>>().notNull().default({}),
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -275,6 +288,15 @@ export const insertDocumentSchema = createInsertSchema(documents)
     metadata: true,
   });
 
+export const insertEvaluationResponseSchema = createInsertSchema(evaluationResponses)
+  .pick({
+    userId: true,
+    probateCaseId: true,
+    answers: true,
+    derivedFlags: true,
+    completedAt: true,
+  });
+
 export const insertTaskSchema = createInsertSchema(tasks)
   .pick({
     caseId: true,
@@ -309,6 +331,9 @@ export type EstateLiability = typeof estateLiabilities.$inferSelect;
 
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
+
+export type InsertEvaluationResponse = z.infer<typeof insertEvaluationResponseSchema>;
+export type EvaluationResponse = typeof evaluationResponses.$inferSelect;
 
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;

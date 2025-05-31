@@ -1,0 +1,32 @@
+📜 Question Flow & Logic
+Section 1: Applicant Details
+Question	Key	Type	Logic
+1. Are you named as an executor in the will?	q1_executor_named	boolean	If No, ask Q2
+2. Are you acting under a power of attorney on behalf of an executor?	q2_poas	boolean	If No, user is not eligible
+3. How many people are applying?	q3_applicant_count	number	Max 4. If >4, error. If 1, only main applicant needed
+4. Is anyone under 18 receiving a gift in the will or codicil?	q4_under18_gift	boolean	If Yes, at least 2 applicants are mandatory
+
+Section 2: Deceased’s Information
+Question	Key	Type	Logic
+5. Deceased’s full name, date of birth, date of death	q5_name_dob_dod	object	Static — used for PA1P Section B
+6. Did the deceased live permanently in England or Wales?	q6_domicile_uk	boolean	If No, flag: Domicile review may be needed
+7. Did the deceased hold any assets under another name?	q7_alt_names	boolean + text[]	If Yes, collect names for grant listing
+8. Did the deceased own foreign (non-UK) assets?	q8_foreign_assets	boolean + value	If Yes, may trigger IHT400
+9. Was any land still held as settled land?	q9_settled_land	boolean	If Yes, flag for legal review
+10. Were any relatives adopted in/out of the family?	q10_adoptions	boolean + details	If Yes, collect relationships
+
+Section 3: Will and Executors
+Question	Key	Type	Logic
+11. What is the date of the will?	q11_will_date	date	Required for PA1P
+12. Are there codicils to the will?	q12_codicils	boolean + date[]	If Yes, collect all codicil dates
+13. Did the deceased marry after making the will?	q13_will_revoked	boolean	If Yes, flag: Will may be revoked, PA13 may be needed
+14. Any wills made outside England and Wales?	q14_foreign_wills	boolean	If Yes, translations may be needed
+15. Are all named executors applying?	q15_all_executors_applying	boolean	If No, ask Q16
+16. Why is each non-applying executor not applying?	q16_non_applying_reasons	list of reasons	Determine need for renunciation form, Section 5, etc.
+
+Section 4: Estate & Tax Assessment
+Question	Key	Type	Logic
+17. Estimated gross value of estate	q17_gross_value	currency	Used to determine IHT form type
+18. Estimated net value of estate	q18_net_value	currency	Same as above
+19. Has an Inheritance Tax form already been completed?	q19_iht_done	boolean	If No, block PA1P submission
+20. Which IHT form was used?	q20_iht_form_type	enum: "IHT205" or "IHT400"	Used to control document list and pre-fill

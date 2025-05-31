@@ -1,0 +1,116 @@
+🔧 Scope of Work: Evaluation Flows & Answer Storage
+Project: ProbateSwift
+Owner: David Barnes
+Developer: [Insert name]
+Date: [Insert start date]
+
+🎯 Summary
+We are implementing two distinct but connected flows to guide users through understanding and completing their probate application. This includes:
+
+A simple pre-signup eligibility check on the landing page
+
+A detailed in-app evaluation flow for signed-in users, which drives conditional logic for form filling (PA1P, IHT205/IHT400) and document requirements
+
+🧩 Feature 1: Landing Page Eligibility Check (Public / Anonymous)
+🎯 Purpose
+Quickly help users determine if they likely need probate.
+
+✅ Requirements
+Implement a 6-question interactive assessment on the landing page
+
+Does not require sign-in
+
+After completion:
+
+Show result (e.g. "Probate likely required")
+
+Include CTA to “Continue to ProbateSwift” (leads to sign-up/login)
+
+Track responses anonymously
+
+If user signs up, associate their prior assessment with their account and case
+
+👨‍💻 Tech Tasks
+Use existing assessment logic (assessment_results table)
+
+Add support for anonymous responses (e.g. user_id = null, store via browser ID/session ID)
+
+Auto-link to user account on signup/login via cookie/session
+
+Route: /assessment
+
+🧩 Feature 2: In-App Evaluation Flow (Signed-in Users Only)
+🎯 Purpose
+Gather the exact information needed to:
+
+Determine which parts of PA1P apply
+
+Identify supporting documents required
+
+Pre-fill PDF form fields
+
+Determine which IHT form (205 vs 400) applies
+
+🧭 Trigger
+Show to users after they've completed the landing page assessment and are signed in
+
+Route: /evaluation/:caseId
+
+🧱 Core Components
+1. Multi-Step Flow UI
+One question per screen
+
+“Next” and “Back” buttons
+
+Conditional branching logic (e.g. Q2 shown only if Q1 = “No”)
+
+Auto-save on each step
+
+Resume from where user left off
+
+Optional progress indicator
+
+2. Questions Source
+Questions defined in code initially (JSON config or array)
+
+Can be moved to backend API later if needed
+
+3. Storage Model
+Create a new table: evaluation_responses
+
+Field	Type	Notes
+id	UUID	PK
+user_id	UUID	FK (required)
+probate_case_id	UUID	FK (required)
+answers	JSONB	{ q1: true, q2: 'executor', ... }
+derived_flags	JSONB	{ eligible_to_apply: true, needs_renunciation: false, ... }
+completed_at	TIMESTAMP	Set when last question submitted
+created_at	TIMESTAMP	—
+updated_at	TIMESTAMP	—
+
+4. Derived Logic Engine
+Frontend or backend function (deriveEvaluationFlags(answers))
+
+Must produce inferred flags used later to:
+
+Decide which PA1P sections to show
+
+Identify if IHT205 or IHT400 is needed
+
+Determine required documents (e.g., PA13, renunciation form)
+
+🛠 API Endpoints
+Method	Route	Purpose
+GET	/api/evaluation/:caseId	Get existing answers & flags
+POST	/api/evaluation/:caseId	Save/overwrite answers
+POST	/api/evaluation/:caseId/derive	(Optional) Return updated derived flags only
+
+🧾 Deliverables Summary
+Deliverable	Description
+LandingAssessment.tsx	UI flow on landing page
+evaluation_responses table	New DB table
+EvaluationFlow.tsx	In-app evaluation UI flow
+GET/POST /api/evaluation	REST API endpoints
+deriveEvaluationFlags()	Logic function
+PDFFieldMapPrep.ts (optional)	Map answers to PDF fields
+ChecklistGenerator.ts (optional)	Use flags to show user a tailored checklist

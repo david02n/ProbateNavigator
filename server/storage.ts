@@ -8,6 +8,7 @@ import {
   documents,
   tasks,
   deceasedFormFields,
+  evaluationResponses,
   type User, 
   type InsertUser, 
   type AssessmentResult, 
@@ -25,7 +26,9 @@ import {
   type Task,
   type InsertTask,
   type DeceasedFormFields,
-  type InsertDeceasedFormFields
+  type InsertDeceasedFormFields,
+  type EvaluationResponse,
+  type InsertEvaluationResponse
 } from "@shared/schema";
 import * as session from "express-session";
 import createMemoryStore from "memorystore";
@@ -98,6 +101,11 @@ export interface IStorage {
   createDeceasedFormFields(data: InsertDeceasedFormFields): Promise<DeceasedFormFields>;
   updateDeceasedFormFields(personId: number, data: Partial<InsertDeceasedFormFields>): Promise<DeceasedFormFields | undefined>;
   isDeceasedFormFieldsComplete(personId: number): Promise<boolean>;
+  
+  // Evaluation Response methods
+  getEvaluationResponse(caseId: number): Promise<EvaluationResponse | undefined>;
+  createEvaluationResponse(data: InsertEvaluationResponse): Promise<EvaluationResponse>;
+  updateEvaluationResponse(caseId: number, data: Partial<InsertEvaluationResponse>): Promise<EvaluationResponse | undefined>;
   
   // Session store
   sessionStore: session.Store;
@@ -888,6 +896,36 @@ export class MemStorage implements IStorage {
     
     // All required fields are present
     return true;
+  }
+
+  // Evaluation Response methods
+  async getEvaluationResponse(caseId: number): Promise<EvaluationResponse | undefined> {
+    const [response] = await db
+      .select()
+      .from(evaluationResponses)
+      .where(eq(evaluationResponses.probateCaseId, caseId))
+      .limit(1);
+    return response;
+  }
+
+  async createEvaluationResponse(data: InsertEvaluationResponse): Promise<EvaluationResponse> {
+    const [response] = await db
+      .insert(evaluationResponses)
+      .values(data)
+      .returning();
+    return response;
+  }
+
+  async updateEvaluationResponse(caseId: number, data: Partial<InsertEvaluationResponse>): Promise<EvaluationResponse | undefined> {
+    const [response] = await db
+      .update(evaluationResponses)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(evaluationResponses.probateCaseId, caseId))
+      .returning();
+    return response;
   }
 }
 

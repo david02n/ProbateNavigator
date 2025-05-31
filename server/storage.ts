@@ -121,6 +121,7 @@ export class MemStorage implements IStorage {
   private documents: Map<number, Document>;
   private tasks: Map<number, Task>;
   private deceasedFormFields: Map<number, DeceasedFormFields>;
+  private evaluationResponses: Map<number, EvaluationResponse>;
   private userIdCounter: number;
   private assessmentIdCounter: number;
   private probateCaseIdCounter: number;
@@ -129,6 +130,7 @@ export class MemStorage implements IStorage {
   private estateLiabilityIdCounter: number;
   private documentIdCounter: number;
   private taskIdCounter: number;
+  private evaluationResponseIdCounter: number;
   sessionStore: session.Store;
 
   constructor() {
@@ -142,6 +144,7 @@ export class MemStorage implements IStorage {
     this.documents = new Map();
     this.tasks = new Map();
     this.deceasedFormFields = new Map();
+    this.evaluationResponses = new Map();
     this.userIdCounter = 2; // Start at 2 since we'll create a test user with ID 1
     this.assessmentIdCounter = 1;
     this.probateCaseIdCounter = 1;
@@ -150,6 +153,7 @@ export class MemStorage implements IStorage {
     this.estateLiabilityIdCounter = 1;
     this.documentIdCounter = 1;
     this.taskIdCounter = 1;
+    this.evaluationResponseIdCounter = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
     });
@@ -824,6 +828,52 @@ export class MemStorage implements IStorage {
   // Required by interface but not implemented yet
   async getPeopleByCaseId(caseId: number): Promise<Executor[]> {
     return this.getExecutorsByCaseId(caseId); // For now, redirect to existing method
+  }
+
+  // Evaluation Response methods
+  async getEvaluationResponse(caseId: number): Promise<EvaluationResponse | undefined> {
+    return Array.from(this.evaluationResponses.values()).find(
+      (response) => response.caseId === caseId
+    );
+  }
+
+  async createEvaluationResponse(data: InsertEvaluationResponse): Promise<EvaluationResponse> {
+    const id = this.evaluationResponseIdCounter++;
+    const now = new Date();
+    
+    const newEvaluationResponse: EvaluationResponse = {
+      id,
+      caseId: data.caseId,
+      answers: data.answers || {},
+      derivedFlags: data.derivedFlags || {},
+      completedSections: data.completedSections || [],
+      unlockedMilestones: data.unlockedMilestones || [],
+      createdAt: now,
+      updatedAt: now,
+      completedAt: data.completedAt || null
+    };
+    
+    this.evaluationResponses.set(id, newEvaluationResponse);
+    return newEvaluationResponse;
+  }
+
+  async updateEvaluationResponse(caseId: number, data: Partial<InsertEvaluationResponse>): Promise<EvaluationResponse | undefined> {
+    const existing = Array.from(this.evaluationResponses.values()).find(
+      (response) => response.caseId === caseId
+    );
+    
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updatedResponse: EvaluationResponse = {
+      ...existing,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    this.evaluationResponses.set(existing.id, updatedResponse);
+    return updatedResponse;
   }
   
   // Deceased Form Fields methods

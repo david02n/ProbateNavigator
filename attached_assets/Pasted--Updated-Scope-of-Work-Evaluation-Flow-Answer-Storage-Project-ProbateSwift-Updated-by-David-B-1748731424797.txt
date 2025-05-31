@@ -1,0 +1,74 @@
+🔧 Updated Scope of Work: Evaluation Flow & Answer Storage
+Project: ProbateSwift
+Updated by: David Barnes
+Date: [Insert date]
+
+🧭 Summary of Key Updates
+❌ Removed Q5 (Deceased’s Name, DOB, DOD) — this is captured in the People tab
+
+❌ Removed Q17 & Q18 (Gross/Net Estate Value) — these are calculated automatically from the Estate tab
+
+✅ IHT form selection is dependent on data entered in the Estate tab
+
+⚠️ Probate application (PA1P) can’t proceed until the IHT form is completed — this will now be enforced in flow logic
+
+🔄 Updated Question Flow
+Section 1: Applicant Details
+Question	Key	Type	Logic
+1. Are you named as an executor in the will?	q1_executor_named	boolean	If No, ask Q2
+2. Are you acting under a power of attorney on behalf of an executor?	q2_poas	boolean	If No, user is ineligible
+3. How many people are applying?	q3_applicant_count	number (1–4)	Max 4. Flag if 2+ required based on Q4
+4. Is anyone under 18 receiving a gift in the will or codicil?	q4_under18_gift	boolean	If Yes, at least 2 applicants are mandatory
+
+Section 2: Deceased’s Information (adjusted)
+Question	Key	Type	Logic
+5. Did the deceased live permanently in England or Wales?	q5_domicile_uk	boolean	If No, flag potential IHT401 need
+6. Did the deceased hold any assets under another name?	q6_alt_names	boolean + string[]	If Yes, list must appear on the grant
+7. Did the deceased own foreign (non-UK) assets?	q7_foreign_assets	boolean + value	If Yes, may trigger IHT400 requirement
+8. Was any land still held as settled land?	q8_settled_land	boolean	If Yes, flag for legal review
+9. Were any relatives adopted in/out of the family?	q9_adoptions	boolean + details	If Yes, may affect inheritance relationships
+
+Section 3: Will and Executors
+Question	Key	Type	Logic
+10. What is the date of the will?	q10_will_date	date	Mandatory for PA1P
+11. Are there codicils to the will?	q11_codicils	boolean + date[]	If Yes, originals must be submitted
+12. Did the deceased marry after making the will?	q12_will_revoked	boolean	If Yes, will may be invalid – show warning
+13. Any wills made outside England and Wales?	q13_foreign_wills	boolean	If Yes, translations may be required
+14. Are all named executors applying?	q14_all_executors_applying	boolean	If No, ask Q15
+15. Why is each non-applying executor not applying?	q15_non_applying_reasons	list of reasons	Required to determine Section 5, PA11, renunciation, etc.
+
+Section 4: Inheritance Tax Readiness
+Question	Key	Type	Logic
+16. Has an Inheritance Tax (IHT) form been completed?	q16_iht_done	boolean	If No, block PA1P until completed
+17. Which form was completed?	q17_iht_form_type	enum: "IHT205" or "IHT400"	Pre-condition for submitting PA1P
+
+📌 Revised Logic Notes
+PA1P cannot be generated or submitted until Q16 = Yes
+
+The estate value logic for choosing IHT205 vs IHT400 does not live in this form — it’s calculated from the Estate tab, and Q17 is a confirmation only
+
+Any attempt to continue with missing estate or IHT data must prompt the user to return to the relevant tab
+
+✅ Updated Derived Flags Output
+json
+Copy
+Edit
+{
+  "eligible_to_apply": true,
+  "requires_2_applicants": false,
+  "needs_section5": true,
+  "requires_pa13": false,
+  "requires_renunciation_form": true,
+  "foreign_assets_present": true,
+  "codicils_present": true,
+  "non_applying_executors": ["renunciation", "deceased"],
+  "iht_form_type": "IHT205",
+  "iht_form_ready": true
+}
+🚧 Developer Tasks (Updated)
+Task	Description
+evaluation_responses table	As specified earlier
+/api/evaluation/:caseId	Create/update evaluation answers and flags
+EvaluationFlow.tsx	UI for the updated flow with 17 total questions
+deriveEvaluationFlags()	Logic function to return JSON flags as above
+Redirect guard	Prevent PA1P generation if IHT form not complete

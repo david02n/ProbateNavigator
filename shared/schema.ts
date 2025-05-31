@@ -35,7 +35,7 @@ export const assessmentResults = pgTable("assessment_results", {
 export const evaluationResponses = pgTable("evaluation_responses", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  probateCaseId: integer("probate_case_id").references(() => probateCases.id).notNull(),
+  caseId: integer("case_id").references(() => probateCases.id).notNull(),
   answers: jsonb("answers").$type<Record<string, any>>().notNull().default({}),
   derivedFlags: jsonb("derived_flags").$type<Record<string, any>>().notNull().default({}),
   completedAt: timestamp("completed_at"),

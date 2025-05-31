@@ -10,6 +10,7 @@ import AuthPage from "@/pages/auth-page";
 
 // New redesigned pages
 import NewDashboardPage from "@/pages/new-dashboard";
+import DashboardPage from "@/pages/dashboard-page";
 import PeoplePage from "@/pages/people-page";
 import EstatePage from "@/pages/estate-page";
 import DocumentsPage from "@/pages/documents-page";

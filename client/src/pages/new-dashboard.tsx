@@ -423,6 +423,46 @@ const NewDashboardPage: React.FC = () => {
                             </div>
                           </div>
                           
+                          {/* Advanced Evaluation Section */}
+                          <div className="border rounded-lg p-4 border-blue-200 bg-blue-50">
+                            <div className="flex justify-between">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 mt-0.5">
+                                  <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
+                                    <FileText className="h-3 w-3 text-white" />
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <h4 className="font-medium">Advanced Evaluation</h4>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    Complete detailed evaluation questions to unlock milestone-based progress tracking and personalized guidance.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full h-fit">Available</span>
+                            </div>
+                            <div className="ml-8 mt-2">
+                              <Button 
+                                size="sm" 
+                                className="text-xs h-7 bg-blue-600 hover:bg-blue-700"
+                                onClick={() => {
+                                  if (activeCase) {
+                                    // Navigate to evaluation route with the case ID
+                                    navigate("/evaluation");
+                                  } else {
+                                    toast({ 
+                                      title: "Assessment Required",
+                                      description: "Please complete the assessment first to create a probate case.",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                              >
+                                Start Evaluation
+                              </Button>
+                            </div>
+                          </div>
+                          
                           {/* Task 2 - Executor Info */}
                           <div className={`border rounded-lg p-4 ${executors.length > 0 ? '' : 'border-amber-200 bg-amber-50'}`}>
                             <div className="flex justify-between">

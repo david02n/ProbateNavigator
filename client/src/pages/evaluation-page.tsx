@@ -149,7 +149,14 @@ export default function EvaluationPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <MilestoneProgress caseId={defaultCase.id} />
+                  <MilestoneProgress 
+                    completedSections={[]}
+                    onStartEvaluation={() => setActiveTab("evaluation")}
+                    onNavigateToTab={(tab) => {
+                      // Navigate to dashboard with the specific tab
+                      navigate('/dashboard');
+                    }}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

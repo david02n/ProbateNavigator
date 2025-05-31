@@ -147,6 +147,7 @@ function Router() {
       <Route path="/estate" component={EstatePage} />
       <Route path="/documents" component={DocumentsPage} />
       <Route path="/documents/upload" component={DocumentUploadPage} />
+      <Route path="/evaluation" component={DashboardPage} />
       <Route path="*" component={NotFound} />
     </Switch>
   );

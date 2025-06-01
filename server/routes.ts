@@ -2525,5 +2525,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Routing state endpoint - centralized probate application routing logic
+  app.get('/api/routing-state', async (req: Request, res: Response) => {
+    try {
+      const caseId = req.query.caseId ? parseInt(req.query.caseId as string) : undefined;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!caseId) {
+        return res.status(400).json({ error: 'caseId parameter required' });
+      }
+
+      // Import routing engine
+      const { deriveRoutingState } = await import('@shared/routing-engine');
+
+      // Gather all data sources for routing computation
+      const inputs: any = {};
+
+      // Get evaluation answers
+      try {
+        const evaluation = await storage.getEvaluationResponse(caseId);
+        if (evaluation?.answers) {
+          inputs.evaluationAnswers = evaluation.answers;
+        }
+      } catch (error) {
+        console.log('No evaluation data found for case', caseId);
+      }
+
+      // Note: Estate, executor, and document data would be gathered here
+      // For now, we'll compute routing state based on evaluation data
+      // This can be expanded as more data sources become available
+      console.log('Computing routing state with evaluation data for case', caseId);
+
+      // Compute routing state
+      const routingState = deriveRoutingState(inputs);
+
+      res.json(routingState);
+    } catch (error) {
+      console.error('Error computing routing state:', error);
+      res.status(500).json({ error: 'Failed to compute routing state' });
+    }
+  });
+
   return httpServer;
 }

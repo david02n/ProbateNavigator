@@ -1,0 +1,142 @@
+🔷 Block 2: Routing Engine
+✅ Purpose
+Use evaluation responses, uploaded data, and declared facts to calculate and maintain a centralized routing state for the user. This routing state determines:
+
+Eligibility to apply for probate
+
+Whether probate is required
+
+Type of probate application (PA1P vs PA1A)
+
+Whether the estate is excepted or not
+
+If the user can follow a fast-track journey
+
+Which steps (e.g. estate entry, IHT forms) are required before form generation
+
+This routing state becomes the source of truth to power conditional UI, unlock milestones, and inform document generation.
+
+📦 Routing State Object
+This object will be computed and stored (or memoized) as:
+
+ts
+Copy
+Edit
+interface RoutingState {
+  eligibleToApply: boolean;
+  probateRequired: boolean;
+  probateType: 'grant_of_probate' | 'letters_of_administration';
+  ihtFormRequired: 'IHT400' | 'online_declaration' | null;
+  estateIsExcepted: boolean;
+  fastTrackEligible: boolean;
+  needsMoreEstateData: boolean;
+  needsMorePeopleData: boolean;
+  dataConfidence: 'declared' | 'evaluated' | 'inferred' | 'incomplete';
+}
+🧠 Logic Sources
+Routing state is derived from multiple data points, prioritizing in this order:
+
+User declarations (estate_declared_excepted, i_know_what_to_do)
+
+Evaluation answers (Block 1 output)
+
+Estate tab (total gross/net estate values)
+
+People tab (executor presence, applicant count)
+
+Document uploads (will, death certificate, IHT form)
+
+Assessment results (if available from landing page)
+
+🛠️ Key Functions
+deriveRoutingState(userId, caseId): RoutingState
+Collect data from DB or memory cache:
+
+evaluation_answers
+
+estate_total
+
+executor_count
+
+document_upload_status
+
+Compute routing outcomes using all inputs
+
+Return full RoutingState object
+
+needsProbate(answers) → boolean
+Probate likely needed if:
+
+Sole property ownership
+
+Sole bank accounts over £5k–10k
+
+Estate value > £5k
+
+isEligibleToApply(answers) → boolean
+Must be named executor or have POA
+
+If “No” to both: eligibleToApply = false
+
+getProbateType(answers) → 'grant_of_probate' | 'letters_of_administration'
+Will exists → grant of probate
+
+No will → letters of administration
+
+getIHTForm(answers, estateData) → 'IHT400' | 'online_declaration'
+Online declaration:
+
+Gross < £325,000 (or up to £650k with transferable NRB)
+
+No trusts/gifts/foreign assets
+
+IHT400 if:
+
+Gross value > £325k and NRB not transferred
+
+Gifts/trusts/foreign assets present
+
+isExceptedEstate(...) → boolean
+Derived from estate value, NRB/spouse info, and foreign/trust/gift flags
+
+isFastTrackEligible(...) → boolean
+All of:
+
+Will uploaded
+
+Death certificate uploaded
+
+Single executor added
+
+Estate is excepted
+
+IHT form declared or online path confirmed
+
+🧩 Implementation Requirements
+RoutingState should be accessible on dashboard mount:
+
+Either computed live or fetched from server (caching ok)
+
+Store the latest routing snapshot in the DB (optional but useful for debugging + persistence)
+
+Any change in relevant data (People, Estate, Evaluation) must trigger a re-computation
+
+Expose route: GET /api/routing-state?caseId=...
+
+🧪 Testing Scenarios
+Ensure test coverage for:
+
+Scenario	Expected Output
+Will + £150k + 1 executor + UK domicile	excepted + fastTrackEligible: true
+No will + spouse alive + £100k estate	letters_of_administration
+£500k + gifts in last 7 years	IHT400 required
+No executor, no POA	eligibleToApply: false
+Mixed/unknown values	dataConfidence: 'incomplete'
+
+💡 Notes for Developer
+Keep routing logic modular and testable
+
+Avoid blocking the user unnecessarily — allow partial progress even with incomplete state
+
+Use dataConfidence to adjust how aggressively UI prompts user for more data
+

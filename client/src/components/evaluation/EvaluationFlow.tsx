@@ -39,11 +39,42 @@ export const EvaluationFlow: React.FC<EvaluationFlowProps> = ({ caseId, onComple
     },
   });
 
-  // Initialize answers from existing evaluation
+  // Initialize answers from existing evaluation and skip to first unanswered question
   useEffect(() => {
     if (existingEvaluation && typeof existingEvaluation === 'object') {
       if (existingEvaluation.answers) {
         setAnswers(existingEvaluation.answers);
+        
+        // Find first unanswered question and navigate to its section
+        const allQuestions = detailedEvaluationSections.flatMap((section, sectionIndex) => 
+          section.questions.map(q => ({ ...q, sectionId: section.id, sectionIndex }))
+        );
+        
+        const firstUnansweredQuestion = allQuestions.find(question => {
+          // Check if question should be visible based on conditional logic
+          if (question.conditionalLogic?.showIf) {
+            const shouldShow = Object.entries(question.conditionalLogic.showIf).every(([key, expectedValue]) => {
+              const actualValue = existingEvaluation.answers[key];
+              if (Array.isArray(expectedValue)) {
+                return expectedValue.includes(actualValue);
+              }
+              return actualValue === expectedValue;
+            });
+            if (!shouldShow) return false;
+          }
+          
+          // Check if question is answered
+          return !existingEvaluation.answers[question.key];
+        });
+        
+        if (firstUnansweredQuestion) {
+          setCurrentSectionIndex(firstUnansweredQuestion.sectionIndex);
+          setCurrentQuestionIndex(
+            detailedEvaluationSections[firstUnansweredQuestion.sectionIndex].questions.findIndex(
+              q => q.key === firstUnansweredQuestion.key
+            )
+          );
+        }
       }
       if (existingEvaluation.derivedFlags) {
         setDerivedFlags(existingEvaluation.derivedFlags);

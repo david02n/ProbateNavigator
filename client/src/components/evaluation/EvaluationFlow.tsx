@@ -11,6 +11,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { detailedEvaluationSections, deriveEvaluationFlags } from '@shared/evaluation-config';
 import type { EvaluationQuestion } from '@shared/evaluation-config';
+import { deriveRoutingState, isEvaluationComplete } from '@shared/evaluation-routing';
+import { EvaluationResults } from './EvaluationResults';
 
 interface EvaluationFlowProps {
   caseId: number;
@@ -23,6 +25,7 @@ export const EvaluationFlow: React.FC<EvaluationFlowProps> = ({ caseId, onComple
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isComplete, setIsComplete] = useState(false);
   const [derivedFlags, setDerivedFlags] = useState<any>(null);
+  const [showResults, setShowResults] = useState(false);
   const queryClient = useQueryClient();
 
   // Load existing evaluation
@@ -41,9 +44,10 @@ export const EvaluationFlow: React.FC<EvaluationFlowProps> = ({ caseId, onComple
 
   // Initialize answers from existing evaluation and skip to first unanswered question
   useEffect(() => {
-    if (existingEvaluation && typeof existingEvaluation === 'object') {
-      if (existingEvaluation.answers) {
-        setAnswers(existingEvaluation.answers);
+    if (existingEvaluation && typeof existingEvaluation === 'object' && 'answers' in existingEvaluation) {
+      const evaluation = existingEvaluation as any;
+      if (evaluation.answers) {
+        setAnswers(evaluation.answers);
         
         // Find first unanswered question and navigate to its section
         const allQuestions = detailedEvaluationSections.flatMap((section, sectionIndex) => 
@@ -54,7 +58,7 @@ export const EvaluationFlow: React.FC<EvaluationFlowProps> = ({ caseId, onComple
           // Check if question should be visible based on conditional logic
           if (question.conditionalLogic?.showIf) {
             const shouldShow = Object.entries(question.conditionalLogic.showIf).every(([key, expectedValue]) => {
-              const actualValue = existingEvaluation.answers[key];
+              const actualValue = evaluation.answers[key];
               if (Array.isArray(expectedValue)) {
                 return expectedValue.includes(actualValue);
               }
@@ -64,7 +68,7 @@ export const EvaluationFlow: React.FC<EvaluationFlowProps> = ({ caseId, onComple
           }
           
           // Check if question is answered
-          return !existingEvaluation.answers[question.key];
+          return !evaluation.answers[question.key];
         });
         
         if (firstUnansweredQuestion) {
@@ -76,10 +80,10 @@ export const EvaluationFlow: React.FC<EvaluationFlowProps> = ({ caseId, onComple
           );
         }
       }
-      if (existingEvaluation.derivedFlags) {
-        setDerivedFlags(existingEvaluation.derivedFlags);
+      if ('derivedFlags' in evaluation && evaluation.derivedFlags) {
+        setDerivedFlags(evaluation.derivedFlags);
       }
-      if (existingEvaluation.completedAt) {
+      if ('completedAt' in evaluation && evaluation.completedAt) {
         setIsComplete(true);
       }
     }

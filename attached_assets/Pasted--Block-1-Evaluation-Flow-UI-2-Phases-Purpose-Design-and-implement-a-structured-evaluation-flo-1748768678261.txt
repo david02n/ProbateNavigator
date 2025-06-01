@@ -1,0 +1,86 @@
+🔷 Block 1: Evaluation Flow UI (2 Phases)
+✅ Purpose
+Design and implement a structured evaluation flow within the ProbateSwift dashboard that captures detailed user inputs about the deceased, the estate, and the applicants. These inputs will determine eligibility, estate type (excepted vs non-excepted), the required IHT form, and the correct path through the probate process.
+
+The evaluation flow must be non-redundant, skippable if not needed, and flexible enough to adapt based on known user data (e.g. declared values or inferred from uploaded documents).
+
+🧭 Functional Requirements
+🧱 UI Component
+Evaluation flow must be accessible from the dashboard as a separate route (e.g. /dashboard/evaluation)
+
+Display as a step-by-step form, grouped into Phase 1 and Phase 2
+
+Allow pause and resume — answers should persist
+
+Use progress indicator to show how far the user has gone
+
+Show “Skip for now” and “I already know this” options where applicable
+
+🔹 Phase 1: Estate & IHT Eligibility Questions
+Question	ID	Type	Notes
+Was the deceased domiciled in the UK at death?	q1_domicile_uk	Yes/No	Affects IHT eligibility
+Did the deceased make any gifts in the 7 years before death?	q2_gifts_7yrs	Yes/No/Not sure	Affects IHT400 trigger
+Was the deceased married or in a civil partnership at death?	q3_married_at_death	Yes/No	For NRB/transfer check
+Had their spouse/partner already died?	q4_spouse_died_first	Yes/No/Not sure	For NRB transfer check
+Was the spouse's nil rate band fully used?	q5_nrb_transferred	Yes/No/Not sure	Impacts £325k vs £650k threshold
+Did the deceased leave their home to children or grandchildren?	q6_home_to_children	Yes/No/Not sure	For residence nil rate band
+Did the deceased live in a UK property they owned?	q7_owned_home_uk	Yes/No/Not sure	Required for residence nil rate band
+Did the deceased benefit from or create any trusts?	q8_trusts	Yes/No/Not sure	Triggers complexity/IHT400
+Were any assets held overseas?	q9_foreign_assets	Yes/No/Not sure	Triggers IHT400
+What is the gross value of the estate (before debts)?	q10_gross_value	Currency/Unknown	If unknown, prompt to use estimator or gather data
+What is the net value of the estate (after debts)?	q11_net_value	Currency/Unknown	Used with Q10 for IHT logic
+
+🔸 Phase 2: Application & Will Details
+Question	ID	Type	Notes
+Are you named as an executor in the will?	q12_executor_named	Yes/No	Affects eligibility
+Are you acting under a power of attorney?	q13_po_attorney	Yes/No	Needed if not executor
+How many people are applying?	q14_applicant_count	1 / 2 / 3 / 4	Max 4 allowed
+Is anyone under 18 receiving a gift in the will or codicil?	q15_minors_named	Yes/No/Not sure	Triggers minimum applicant check
+Did the deceased hold any assets under another name?	q16_alt_names	Yes/No	Impacts data for grant
+Are there any codicils to the will?	q17_codicils	Yes/No	Determines documents needed
+Did the deceased marry or enter civil partnership after making the will?	q18_married_after_will	Yes/No	May revoke will
+Did the deceased make wills outside England and Wales?	q19_wills_outside_uk	Yes/No	May need translations
+Are all named executors applying?	q20_all_executors_applying	Yes/No	If no, ask Q21
+Why is each non-applying executor not applying?	q21_executor_absence_reason	Deceased / Renunciation / Power reserved / Lacks capacity / Attorney	Determines documents needed
+
+📦 Data Storage
+All answers stored in a new table: evaluation_answers
+
+Linked by user_id and probate_case_id
+
+Each answer stored with:
+
+question_id
+
+value
+
+source: 'user' | 'declared' | 'inferred'
+
+timestamp
+
+Backend must expose GET and POST endpoints for storing/fetching answers (if not already built)
+
+Answers should be updatable at any time
+
+✅ Skipping or Declaring Known State
+If user skips, set flag: evaluation_skipped: true
+
+If user declares “I already know this is an excepted estate”, save estate_declared_excepted: true
+
+These should still allow users to return and fill evaluation later if needed
+
+💡 Edge Behaviors
+If deceased already added to People tab → pre-fill or skip DOB/DOD questions
+
+If estate value already known from Estate tab → pre-fill Q10/Q11
+
+If will and death certificate uploaded → suppress guidance to add them again
+
+📘 Developer Notes
+Evaluation form layout should be mobile-first and clean
+
+Validation should support “Not sure” answers for certain questions
+
+Ensure logic accommodates users who have already uploaded documents or filled Estate/People tabs
+
+Keep form agnostic of exact routing decisions — routing logic will live in a separate derivation function (deriveRoutingState())

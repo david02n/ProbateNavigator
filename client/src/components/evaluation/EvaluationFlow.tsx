@@ -51,28 +51,40 @@ export const EvaluationFlow: React.FC<EvaluationFlowProps> = ({ caseId, onComple
       if (evaluation.answers) {
         setAnswers(evaluation.answers);
         
-        // Find first unanswered question and navigate to its section (only on initial load)
-        const allQuestions = detailedEvaluationSections.flatMap((section, sectionIndex) => 
-          section.questions.map(q => ({ ...q, sectionId: section.id, sectionIndex }))
-        );
+        // Find first unanswered question, prioritizing current section completion
+        let firstUnansweredQuestion = null;
         
-        // Filter to only visible questions first
-        const visibleQuestions = allQuestions.filter(question => {
-          if (!question.conditionalLogic?.showIf) return true;
+        // First, check each section in order for unanswered questions
+        for (let sectionIndex = 0; sectionIndex < detailedEvaluationSections.length; sectionIndex++) {
+          const section = detailedEvaluationSections[sectionIndex];
           
-          return Object.entries(question.conditionalLogic.showIf).every(([key, expectedValue]) => {
-            const actualValue = evaluation.answers[key];
-            if (Array.isArray(expectedValue)) {
-              return expectedValue.includes(actualValue);
-            }
-            return actualValue === expectedValue;
+          // Filter visible questions in this section
+          const visibleQuestionsInSection = section.questions.filter(question => {
+            if (!question.conditionalLogic?.showIf) return true;
+            
+            return Object.entries(question.conditionalLogic.showIf).every(([key, expectedValue]) => {
+              const actualValue = evaluation.answers[key];
+              if (Array.isArray(expectedValue)) {
+                return expectedValue.includes(actualValue);
+              }
+              return actualValue === expectedValue;
+            });
           });
-        });
-        
-        // Find first unanswered question among visible ones
-        const firstUnansweredQuestion = visibleQuestions.find(question => {
-          return evaluation.answers[question.key] === undefined;
-        });
+          
+          // Look for first unanswered question in this section
+          const unansweredInSection = visibleQuestionsInSection.find(question => {
+            return evaluation.answers[question.key] === undefined;
+          });
+          
+          if (unansweredInSection) {
+            firstUnansweredQuestion = {
+              ...unansweredInSection,
+              sectionId: section.id,
+              sectionIndex
+            };
+            break; // Stop at first section with unanswered questions
+          }
+        }
         
         if (firstUnansweredQuestion) {
           setCurrentSectionIndex(firstUnansweredQuestion.sectionIndex);

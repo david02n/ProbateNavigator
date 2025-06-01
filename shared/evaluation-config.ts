@@ -308,7 +308,7 @@ export const detailedEvaluationSections: EvaluationSection[] = [
         key: 'estate_excepted_from_iht',
         type: 'boolean',
         title: 'Is the estate excepted from Inheritance Tax?',
-        description: 'Is the total estate below the inheritance tax threshold or otherwise exempt? (Most simple estates are excepted.)',
+        description: 'The "inheritance tax threshold" (also known as the nil rate band) is usually £325,000. Most estates valued below this are excepted—meaning no inheritance tax is due and you don\'t need to complete the detailed tax forms (IHT400). You may also be excepted if: • All assets are left to a spouse, civil partner, or charity, • The estate\'s value is less than £1 million and everything over £325,000 goes to a spouse, civil partner, or charity, • Or, the deceased was a permanent resident of the UK and there are no complicated trusts or large gifts in the last 7 years. If you\'re unsure, you can check the government\'s official estate checker tool.',
         required: true
       },
       {

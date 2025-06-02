@@ -781,48 +781,61 @@ export class MemStorage implements IStorage {
   }
 
   async isDeceasedFormFieldsComplete(personId: number): Promise<boolean> {
+    const completionStatus = await this.getDeceasedFormFieldsCompletionStatus(personId);
+    return completionStatus.complete;
+  }
+
+  async getDeceasedFormFieldsCompletionStatus(personId: number): Promise<{ complete: boolean; missingFields: string[] }> {
     const fields = this.deceasedFormFields.get(personId);
     if (!fields) {
-      return false;
+      return { 
+        complete: false, 
+        missingFields: ['Date of Birth', 'Date of Death', 'Domicile Status', 'Marital Status', 'Land Settlement Status', 'Executors Applying Status', 'Adoption History Status'] 
+      };
     }
+    
+    const missingFields: string[] = [];
     
     // Check required fields
-    if (!fields.dateOfBirth || !fields.dateOfDeath || fields.domicileInEnglandOrWales === undefined || 
-        !fields.maritalStatus || fields.landWasSettled === undefined || 
-        fields.executorsApplying === undefined || fields.hasAdoptionHistory === undefined) {
-      return false;
-    }
+    if (!fields.dateOfBirth) missingFields.push('Date of Birth');
+    if (!fields.dateOfDeath) missingFields.push('Date of Death');
+    if (fields.domicileInEnglandOrWales === undefined) missingFields.push('Domicile in England or Wales');
+    if (!fields.maritalStatus) missingFields.push('Marital Status');
+    if (fields.landWasSettled === undefined) missingFields.push('Land Settlement Status');
+    if (fields.executorsApplying === undefined) missingFields.push('Executors Applying Status');
+    if (fields.hasAdoptionHistory === undefined) missingFields.push('Adoption History Status');
     
-    // Check conditional required fields
-    if (fields.wasKnownByOtherNames && 
-        (!fields.otherNamesHeldAssets || fields.otherNamesHeldAssets.length === 0)) {
-      return false;
-    }
-    
+    // Check conditional fields
     if (fields.maritalStatus === 'married' && !fields.marriedDate) {
-      return false;
+      missingFields.push('Marriage Date');
     }
     
-    if (fields.maritalStatus === 'divorced' && 
-        (!fields.divorcedDate || !fields.divorceCourt)) {
-      return false;
+    if (fields.maritalStatus === 'divorced') {
+      if (!fields.divorcedDate) missingFields.push('Divorce Date');
+      if (!fields.divorceCourt) missingFields.push('Divorce Court');
     }
     
-    if (fields.maritalStatus === 'separated' && 
-        (!fields.separatedDate || !fields.separationCourt)) {
-      return false;
+    if (fields.maritalStatus === 'separated') {
+      if (!fields.separatedDate) missingFields.push('Separation Date');
+      if (!fields.separationCourt) missingFields.push('Separation Court');
     }
     
     if (fields.hadForeignAssets && !fields.foreignAssetValueGbp) {
-      return false;
+      missingFields.push('Foreign Asset Value');
     }
     
-    if (fields.hasAdoptionHistory && 
-        (!fields.adoptedRelatives || fields.adoptedRelatives.length === 0)) {
-      return false;
+    if (fields.wasKnownByOtherNames && (!fields.otherNamesHeldAssets || fields.otherNamesHeldAssets.length === 0)) {
+      missingFields.push('Other Names Details');
     }
     
-    return true;
+    if (fields.hasAdoptionHistory && (!fields.adoptedRelatives || fields.adoptedRelatives.length === 0)) {
+      missingFields.push('Adopted Relatives Details');
+    }
+    
+    return {
+      complete: missingFields.length === 0,
+      missingFields
+    };
   }
   
   // Required by interface but not implemented yet

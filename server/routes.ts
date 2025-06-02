@@ -2418,10 +2418,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Access denied' });
       }
       
-      // Check if form fields are complete
-      const isComplete = await storage.isDeceasedFormFieldsComplete(personId);
+      // Check if form fields are complete and get missing fields
+      const completionStatus = await storage.getDeceasedFormFieldsCompletionStatus(personId);
       
-      return res.json({ complete: isComplete });
+      return res.json(completionStatus);
     } catch (error) {
       console.error('Error checking deceased form fields completion:', error);
       return res.status(500).json({ error: 'Internal server error' });

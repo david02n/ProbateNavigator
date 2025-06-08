@@ -3,8 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/use-auth";
-import { FirebaseProvider } from "@/providers/FirebaseProvider";
+import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import { SimpleAuthPage } from "@/pages/SimpleAuthPage";
@@ -22,7 +21,6 @@ import DocumentUploadPage from "@/pages/document-upload-page";
 import DeceasedDetailsPage from "@/pages/deceased-details-page";
 import EvaluationPage from "@/pages/evaluation-page";
 
-import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import AuthCallback from '@/pages/auth-callback';
 
@@ -31,180 +29,66 @@ function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
 
-  // This effect ensures we clean up any hash fragments that might cause issues
-  // and initializes Firebase token refreshing for cross-domain auth
+  // Clean up URL fragments and handle routing
   useEffect(() => {
-    // DIRECT FIX: Override fetch to always include Firebase token
-    const originalFetch = window.fetch;
-    window.fetch = async function(resource, options = {}) {
-      if (typeof resource === 'string' && resource.includes('/api/')) {
-        console.log(`DIRECT TOKEN FIX: Adding token to ${resource}`);
-        try {
-          // Try to get token directly from Firebase
-          const firebaseModule = await import('./lib/firebase');
-          const auth = firebaseModule.auth;
-          const user = auth.currentUser;
-
-          if (user) {
-            console.log(`DIRECT TOKEN FIX: User logged in as ${user.email}`);
-            const token = await user.getIdToken(true);
-
-            // Initialize headers if they don't exist
-            options.headers = options.headers || {};
-
-            // Add token to headers
-            options.headers = {
-              ...options.headers,
-              'Authorization': `Bearer ${token}`
-            };
-
-            console.log('DIRECT TOKEN FIX: Added Authorization header with Bearer token');
-          } else {
-            console.log('DIRECT TOKEN FIX: No user logged in, skipping token');
-          }
-        } catch (e) {
-          console.error('DIRECT TOKEN FIX: Error adding token', e);
-        }
-      }
-
-      return originalFetch.call(this, resource, options);
-    };
-    console.log('DIRECT TOKEN FIX: Installed fetch interceptor v1.0.13-2355');
-
-    // Still initialize Firebase normally
-    import('./lib/firebase').then(async module => {
-      try {
-        // Wait for auth initialization before refreshing tokens
-        await module.waitForAuthInit();
-        console.log('Firebase Auth initialization complete');
-
-        // Then set up token refresh mechanism
-        if (typeof module.initTokenRefresh === 'function') {
-          module.initTokenRefresh();
-          console.log('Initialized Firebase token refresh mechanism');
-        }
-      } catch (err) {
-        console.error('Firebase Auth initialization error:', err);
-      }
-    }).catch(err => {
-      console.error('Failed to load Firebase module:', err);
-    });
-
-    // Remove hash from URL if present (can cause issues on some mobile browsers)
-    if (window.location.hash && window.location.hash !== '#/') {
-      console.log('Removing hash fragment:', window.location.hash);
-      window.history.replaceState(
-        null, 
-        document.title, 
-        window.location.pathname + window.location.search
-      );
+    // Clean up any hash fragments
+    if (window.location.hash) {
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
     }
-
-    // Cleanup function for useEffect
-    return () => {
-      // Restore original fetch if needed
-    };
   }, []);
 
-  // Log navigation for debugging
-  console.log('Current path:', location);
-  console.log('User authenticated:', !!user);
-
-  // Handle special case for root path on mobile
-  if (location === '/' && /Mobi|Android/i.test(navigator.userAgent)) {
-    console.log('Mobile device detected, ensuring proper routing');
-  }
-
-  // Handle Firebase auth handler routes
-  if (location && location.startsWith('/__/auth/')) {
-    console.log('Firebase auth handler route detected, allowing passthrough');
-    return <div>Loading Firebase auth...</div>;
-  }
-
-  // Show loading spinner while auth check is in progress
+  // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <div className="ml-4 text-sm text-gray-600">
-          Loading authentication...
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  // If not authenticated, only show public routes
-  if (!user) {
-    // Redirect protected routes to home when not authenticated
-    const protectedPaths = ['/dashboard', '/people', '/estate', '/documents', '/evaluation'];
-    if (protectedPaths.some(path => location.startsWith(path))) {
-      console.log('[App] Redirecting protected route to home:', location);
-      return <Redirect to="/" />;
-    }
-
-    console.log('[App] Rendering public route:', location);
-
-    // Render public routes with more specific route definitions
-    return (
-      <>
-        <Switch>
-          <Route path="/auth">
-            <SimpleAuthPage />
-          </Route>
-          <Route path="/auth/:tab">
-            <SimpleAuthPage />
-          </Route>
-          <Route path="/signup">
-            <SignupPage />
-          </Route>
-          <Route path="/" component={Home} />
-          <Route path="/home" component={Home} />
-          <Route path="*" component={NotFound} />
-        </Switch>
-      </>
-    );
-  }
-
-  // If authenticated, show protected routes with more specific route definitions
   return (
     <Switch>
-      <Route path="/auth">
-        <Redirect to="/dashboard" />
-      </Route>
-      <Route path="/auth/:tab">
-        <Redirect to="/dashboard" />
-      </Route>
-      <Route path="/signup">
-        <Redirect to="/dashboard" />
-      </Route>
-      <Route path="/" component={NewDashboardPage} />
-      <Route path="/dashboard" component={NewDashboardPage} />
-      <Route path="/people" component={PeoplePage} />
-      <Route path="/people/:personId/deceased-details" component={DeceasedDetailsPage} />
-      <Route path="/estate" component={EstatePage} />
-      <Route path="/documents" component={DocumentsPage} />
-      <Route path="/documents/upload" component={DocumentUploadPage} />
-      <Route path="/evaluation" component={EvaluationPage} />
+      {/* Authentication callback route */}
       <Route path="/auth/callback" component={AuthCallback} />
-      <Route path="*" component={NotFound} />
+      
+      {/* Public routes - accessible without authentication */}
+      <Route path="/auth" component={SimpleAuthPage} />
+      <Route path="/signup" component={SignupPage} />
+      
+      {/* Redirect to auth if not authenticated */}
+      {!user && <Redirect to="/auth" />}
+      
+      {/* Protected routes - require authentication */}
+      {user && (
+        <>
+          <Route path="/" component={Home} />
+          <Route path="/dashboard" component={DashboardPage} />
+          <Route path="/new-dashboard" component={NewDashboardPage} />
+          <Route path="/people" component={PeoplePage} />
+          <Route path="/estate" component={EstatePage} />
+          <Route path="/documents" component={DocumentsPage} />
+          <Route path="/documents/upload" component={DocumentUploadPage} />
+          <Route path="/deceased-details/:personId?" component={DeceasedDetailsPage} />
+          <Route path="/evaluation" component={EvaluationPage} />
+        </>
+      )}
+      
+      {/* 404 route */}
+      <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
   return (
-    <AppFallback>
-      <QueryClientProvider client={queryClient}>
-        <FirebaseProvider>
-          <AuthProvider>
-            <TooltipProvider>
-              <Router />
-              <Toaster />
-            </TooltipProvider>
-          </AuthProvider>
-        </FirebaseProvider>
-      </QueryClientProvider>
-    </AppFallback>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <div className="min-h-screen bg-background text-foreground">
+          <Router />
+          <Toaster />
+        </div>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 

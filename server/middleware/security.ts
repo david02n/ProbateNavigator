@@ -85,8 +85,9 @@ const corsOptions = {
 
     const allowedOrigins = config.ALLOWED_ORIGINS;
     const isReplitDomain = origin.includes('.replit.dev') || origin.includes('.kirk.replit.dev');
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
     
-    if (allowedOrigins.includes(origin) || isReplitDomain) {
+    if (allowedOrigins.includes(origin) || isReplitDomain || isLocalhost) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

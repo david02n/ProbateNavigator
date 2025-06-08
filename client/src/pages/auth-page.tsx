@@ -5,6 +5,19 @@ import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 import { auth } from "@/lib/firebase";
 import { getRedirectResult } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { SwiftLogo } from "@/assets/SwiftLogo";
+import FirebaseAuthUI from "@/components/auth/FirebaseAuthUI";
+import { authService } from "@/lib/auth-service";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 // Extend Window interface to include our shared functions
 declare global {
@@ -15,31 +28,6 @@ declare global {
     };
   }
 }
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
-import { ArrowRight } from "lucide-react";
-import { SwiftLogo } from "@/assets/SwiftLogo";
 
 // Login form schema with validation
 const loginSchema = z.object({
@@ -53,8 +41,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters")
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"]
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -68,9 +58,10 @@ interface AuthPageProps {
 const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("login");
-  const [location] = useLocation();
+  const [activeTab, setActiveTab] = useState<string>(tab || 'login');
+  const [location, setLocation] = useLocation();
   const [isMobile, setIsMobile] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   
   // Initialize tab from URL parameters or props and detect mobile mode
   useEffect(() => {
@@ -222,8 +213,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
     defaultValues: {
       email: "",
       password: "",
-      firstName: "",
-      lastName: "",
+      confirmPassword: "",
     },
   });
 
@@ -325,221 +315,126 @@ const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
     return <Redirect to="/" />;
   }
 
+  const handleRegister = async (data: RegisterFormValues) => {
+    try {
+      setIsRegistering(true);
+      await authService.registerWithEmail(data.email, data.password);
+      
+      toast({
+        title: 'Registration successful',
+        description: 'Welcome to ProbateSwift!',
+      });
+      
+      setLocation('/');
+    } catch (error) {
+      toast({
+        title: 'Registration failed',
+        description: error instanceof Error ? error.message : 'Failed to register',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-soft-grey to-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-soft-grey to-white">
       <div className="text-xs text-gray-400 absolute bottom-1 right-2">v1.0.17-May19-0830</div>
       <div className="flex flex-col md:flex-row w-full">
         {/* Authentication Form Column */}
         <div className="w-full md:w-1/2 p-6 md:p-12 flex items-center justify-center">
-          <Card className="w-full max-w-md shadow-lg">
-            <CardHeader className="space-y-1 flex flex-col items-center">
-              <SwiftLogo className="h-12 w-auto mb-4" />
-              <CardTitle className="text-2xl font-bold text-center">Welcome to ProbateSwift</CardTitle>
-              <CardDescription className="text-center">
-                Enter your details to continue with probate
-              </CardDescription>
-            </CardHeader>
+          <Tabs
+            defaultValue="login"
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
 
-            <Tabs
-              defaultValue="login"
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
-              </TabsList>
+            {/* Login Tab with FirebaseUI */}
+            <TabsContent value="login">
+              <FirebaseAuthUI
+                onSignInError={(error: Error) => {
+                  toast({
+                    title: 'Login failed',
+                    description: error.message,
+                    variant: 'destructive',
+                  });
+                }}
+              />
+            </TabsContent>
 
-              {/* Login Tab */}
-              <TabsContent value="login">
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)}>
-                    <CardContent className="space-y-4 pt-4">
-                      <FormField
-                        control={loginForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter your email"
-                                type="email"
-                                autoComplete="email"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+            {/* Register Tab */}
+            <TabsContent value="register">
+              <Card className="w-full max-w-md shadow-lg">
+                <CardHeader className="space-y-1 flex flex-col items-center">
+                  <SwiftLogo className="h-12 w-auto mb-4" />
+                  <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+                  <CardDescription className="text-center">
+                    Sign up to get started with probate
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        {...registerForm.register('email')}
                       />
-                      <FormField
-                        control={loginForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter your password"
-                                type="password"
-                                autoComplete="current-password"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                      {registerForm.formState.errors.email && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Create a password"
+                        {...registerForm.register('password')}
                       />
-                    </CardContent>
-                    <CardFooter className="flex flex-col space-y-4">
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-primary hover:bg-primary/90"
-                        disabled={loginMutation.isPending}
-                      >
-                        {loginMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                        )}
-                        Login
-                      </Button>
-                      
-                      <div className="relative w-full">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <GoogleLoginButton 
-                        className="w-full" 
+                      {registerForm.formState.errors.password && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Confirm your password"
+                        {...registerForm.register('confirmPassword')}
                       />
-                    </CardFooter>
+                      {registerForm.formState.errors.confirmPassword && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isRegistering}
+                    >
+                      {isRegistering ? 'Creating Account...' : 'Create Account'}
+                    </Button>
                   </form>
-                </Form>
-              </TabsContent>
-
-              {/* Register Tab */}
-              <TabsContent value="register">
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)}>
-                    <CardContent className="space-y-4 pt-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={registerForm.control}
-                          name="firstName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>First Name</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="First name"
-                                  autoComplete="given-name"
-                                  {...field}
-                                  value={field.value || ""}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={registerForm.control}
-                          name="lastName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Last Name</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Last name"
-                                  autoComplete="family-name"
-                                  {...field}
-                                  value={field.value || ""}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <FormField
-                        control={registerForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter your email"
-                                type="email"
-                                autoComplete="email"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Create a password"
-                                type="password"
-                                autoComplete="new-password"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                    <CardFooter className="flex flex-col space-y-4">
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-primary hover:bg-primary/90"
-                        disabled={registerMutation.isPending}
-                      >
-                        {registerMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                        )}
-                        Create Account
-                      </Button>
-                      
-                      <div className="relative w-full">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <GoogleLoginButton 
-                        className="w-full" 
-                      />
-                    </CardFooter>
-                  </form>
-                </Form>
-              </TabsContent>
-            </Tabs>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Hero/Information Column */}

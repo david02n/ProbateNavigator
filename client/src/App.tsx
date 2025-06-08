@@ -20,7 +20,7 @@ import EvaluationPage from "@/pages/evaluation-page";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import AuthCallback from '@/pages/auth-callback';
 
 // Enhanced router component that handles mobile navigation better
 function Router() {
@@ -138,7 +138,6 @@ function Router() {
           <Route path="/home" component={Home} />
           <Route path="*" component={NotFound} />
         </Switch>
-        <GoogleSignInButton variant="floating" />
       </>
     );
   }
@@ -160,6 +159,7 @@ function Router() {
       <Route path="/documents" component={DocumentsPage} />
       <Route path="/documents/upload" component={DocumentUploadPage} />
       <Route path="/evaluation" component={EvaluationPage} />
+      <Route path="/auth/callback" component={AuthCallback} />
       <Route path="*" component={NotFound} />
     </Switch>
   );

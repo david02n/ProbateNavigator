@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { FirebaseProvider } from "@/providers/FirebaseProvider";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import { AuthPage } from "@/pages/auth-page";
+import { SimpleAuthPage } from "@/pages/SimpleAuthPage";
 import { SignupPage } from "@/pages/signup-page";
 
 import { AppFallback } from "@/components/AppFallback";
@@ -121,7 +121,7 @@ function Router() {
     return <div>Loading Firebase auth...</div>;
   }
 
-  // Show loading spinner while auth check is in progress, but add timeout fallback
+  // Show loading spinner while auth check is in progress
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

@@ -117,13 +117,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Listen to Firebase auth state changes (single listener)
   useEffect(() => {
-    if (!isInitialized || !auth) {
-      console.log('[AUTH] Firebase not ready yet');
-      if (isInitialized) {
-        setIsLoading(false);
-      }
+    if (!auth) {
+      console.log('[AUTH] Firebase auth not initialized');
+      setIsLoading(false);
       return;
     }
+
+    // Set a timeout to ensure loading doesn't hang indefinitely
+    const loadingTimeout = setTimeout(() => {
+      console.log('[AUTH] Auth loading timeout - setting loading to false');
+      setIsLoading(false);
+    }, 5000);
 
     console.log('[AUTH] Setting up Firebase auth listener');
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -152,10 +156,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[AUTH] User signed out');
       }
       setIsLoading(false);
+      clearTimeout(loadingTimeout); // Clear the timeout if auth state changes
     });
 
     return () => {
       console.log('[AUTH] Cleaning up auth listener');
+      clearTimeout(loadingTimeout); // Clear the timeout if the component unmounts
       unsubscribe();
     };
   }, [isInitialized, auth]);

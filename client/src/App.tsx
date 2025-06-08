@@ -9,7 +9,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import { AuthPage } from "@/pages/auth-page";
 import { SignupPage } from "@/pages/signup-page";
-import { DebugApp } from "@/components/DebugApp";
+
 import { AppFallback } from "@/components/AppFallback";
 
 // New redesigned pages
@@ -110,11 +110,14 @@ function Router() {
     }
   }, [location, user]);
   
-  // Show loading spinner while auth check is in progress
+  // Show loading spinner while auth check is in progress, but add timeout fallback
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="ml-4 text-sm text-gray-600">
+          Loading authentication...
+        </div>
       </div>
     );
   }
@@ -184,7 +187,6 @@ function App() {
         <FirebaseProvider>
           <AuthProvider>
             <TooltipProvider>
-              <DebugApp />
               <Router />
               <Toaster />
             </TooltipProvider>

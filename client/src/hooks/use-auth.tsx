@@ -151,11 +151,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[DEBUG] Firebase auth state changed!');
       console.log('[DEBUG] Firebase user:', firebaseUser ? firebaseUser.email : 'No user logged in');
 
-      // Ensure we're not in emulator mode
-      if (firebaseUser && window.location.hostname.includes('localhost')) {
-        console.warn('[DEBUG] Detected localhost - this may cause auth issues in production');
-      }
-
       if (firebaseUser) {
         try {
           // Get the ID token

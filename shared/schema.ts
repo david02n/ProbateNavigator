@@ -1,15 +1,29 @@
-import { pgTable, text, serial, timestamp, boolean, integer, numeric, date, jsonb, primaryKey, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer, numeric, date, jsonb, primaryKey, uuid, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User model
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User model updated for Replit Auth
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
+  id: varchar("id").primaryKey().notNull(), // Replit user ID (string)
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  // Keep legacy fields for backward compatibility
+  password: text("password"),
   lastLogin: timestamp("last_login"),
   isGuest: boolean("is_guest").default(false),
   firebaseUid: text("firebase_uid").unique(),
@@ -180,19 +194,24 @@ export const tasks = pgTable("tasks", {
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
   .pick({
+    id: true,
     email: true,
-    password: true,
     firstName: true,
     lastName: true,
-    isGuest: true,
-    firebaseUid: true,
-    photoURL: true,
+    profileImageUrl: true,
   })
   .extend({
-    email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters").optional(),
-    firebaseUid: z.string().optional(),
-    photoURL: z.string().optional(),
+    email: z.string().email("Please enter a valid email address").optional(),
+    profileImageUrl: z.string().optional(),
+  });
+
+export const upsertUserSchema = createInsertSchema(users)
+  .pick({
+    id: true,
+    email: true,
+    firstName: true,
+    lastName: true,
+    profileImageUrl: true,
   });
 
 export const insertAssessmentResultSchema = createInsertSchema(assessmentResults)
@@ -291,7 +310,7 @@ export const insertDocumentSchema = createInsertSchema(documents)
 export const insertEvaluationResponseSchema = createInsertSchema(evaluationResponses)
   .pick({
     userId: true,
-    probateCaseId: true,
+    caseId: true,
     answers: true,
     derivedFlags: true,
     completedAt: true,
@@ -312,6 +331,7 @@ export const insertTaskSchema = createInsertSchema(tasks)
 
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 export type InsertAssessmentResult = z.infer<typeof insertAssessmentResultSchema>;

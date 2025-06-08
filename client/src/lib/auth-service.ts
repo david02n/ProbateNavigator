@@ -1,88 +1,89 @@
 import { auth } from './firebase';
-import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  User,
-  UserCredential
-} from 'firebase/auth';
+
+interface User {
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  uid: string;
+}
 
 export class AuthService {
   private static instance: AuthService;
   
   private constructor() {}
   
-  static getInstance(): AuthService {
+  public static getInstance(): AuthService {
     if (!AuthService.instance) {
       AuthService.instance = new AuthService();
     }
     return AuthService.instance;
   }
 
-  async loginWithEmail(email: string, password: string): Promise<UserCredential> {
+  async signInWithGoogle(): Promise<User> {
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      await this.handleSuccessfulAuth(result.user);
-      return result;
-    } catch (error) {
-      throw this.handleAuthError(error);
-    }
-  }
-
-  async registerWithEmail(email: string, password: string): Promise<UserCredential> {
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      await this.handleSuccessfulAuth(result.user);
-      return result;
-    } catch (error) {
-      throw this.handleAuthError(error);
-    }
-  }
-
-  async logout(): Promise<void> {
-    try {
-      await firebaseSignOut(auth);
-      localStorage.removeItem('firebase_id_token');
+      const provider = new window.firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
       
-      // Call backend to clear session
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
+      const result = await auth.signInWithPopup(provider);
+      const { user } = result;
+      
+      if (!user) {
+        throw new Error('No user returned from Google sign in');
+      }
+
+      return {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        uid: user.uid
+      };
     } catch (error) {
-      console.error('Logout error:', error);
-      throw new Error('Failed to logout');
+      throw this.handleAuthError(error);
     }
   }
 
-  private async handleSuccessfulAuth(user: User): Promise<void> {
+  async signInWithEmail(email: string, password: string): Promise<User> {
     try {
-      const idToken = await user.getIdToken(true);
-      localStorage.setItem('firebase_id_token', idToken);
-
-      // Call backend to establish session
-      const response = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({
-          idToken,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          uid: user.uid
-        }),
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backend authentication failed: ${response.status}`);
+      const result = await auth.signInWithEmailAndPassword(email, password);
+      const { user } = result;
+      
+      if (!user) {
+        throw new Error('No user returned from email sign in');
       }
+
+      return {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        uid: user.uid
+      };
     } catch (error) {
-      console.error('Session establishment error:', error);
-      throw new Error('Failed to establish session');
+      throw this.handleAuthError(error);
+    }
+  }
+
+  async signOut(): Promise<void> {
+    try {
+      await auth.signOut();
+    } catch (error) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  async getCurrentUser(): Promise<User | null> {
+    return auth.currentUser;
+  }
+
+  async getIdToken(forceRefresh = false): Promise<string | null> {
+    try {
+      const user = auth.currentUser;
+      if (!user) return null;
+      return await user.getIdToken(forceRefresh);
+    } catch (error) {
+      console.error('Error getting ID token:', error);
+      return null;
     }
   }
 

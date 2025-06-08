@@ -1,7 +1,3 @@
-import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, connectAuthEmulator } from "firebase/auth";
-import { getAnalytics, isSupported } from "firebase/analytics";
-
 // FIREBASE CONFIGURATION
 // Critical for proper authentication in all environments
 
@@ -21,9 +17,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only if it hasn't been initialized already
-let app: FirebaseApp;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
+let app: any;
+if (!window.firebase.apps.length) {
+  app = window.firebase.initializeApp(firebaseConfig);
   
   // Log initialization for debugging
   console.log('[Firebase] Initialized with config:', {
@@ -32,26 +28,21 @@ if (!getApps().length) {
     environment: import.meta.env.MODE
   });
 } else {
-  app = getApps()[0];
+  app = window.firebase.apps[0];
 }
 
 // Initialize Auth
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-
-// Configure Google Auth Provider
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
+export const auth = window.firebase.auth();
+export const googleProvider = new window.firebase.auth.GoogleAuthProvider();
 
 // Initialize Analytics only in browser and if supported
 export const analytics = typeof window !== 'undefined' 
-  ? isSupported().then(yes => yes ? getAnalytics(app) : null)
+  ? window.firebase.analytics.isSupported().then(yes => yes ? window.firebase.analytics(app) : null)
   : null;
 
 // Development environment setup - Skip emulator for Replit
 if (import.meta.env.DEV && window.location.hostname === 'localhost') {
-  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+  window.firebase.auth().useEmulator('http://localhost:9099', { disableWarnings: true });
   console.log('[Firebase] Connected to Auth Emulator');
 }
 
@@ -63,7 +54,7 @@ export async function waitForAuthInit(): Promise<void> {
       return resolve();
     }
     
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged((user: any) => {
       unsubscribe();
       console.log("[Firebase] Auth initialized:", user ? `with user ${user.email}` : "no user");
       resolve();
@@ -113,24 +104,27 @@ export async function getFreshToken(): Promise<string | null> {
   }
 }
 
-// Setup automatic token refresh
+// Initialize token refresh mechanism
 export function initTokenRefresh() {
-  const REFRESH_INTERVAL = 45 * 60 * 1000; // 45 minutes
-  
-  setInterval(async () => {
-    try {
-      const user = auth.currentUser;
-      if (user) {
+  // Set up token refresh listener
+  auth.onIdTokenChanged(async (user: any) => {
+    if (user) {
+      try {
         const token = await user.getIdToken(true);
-        localStorage.setItem('firebase_id_token', token);
-        console.log('[Firebase] Token refreshed automatically');
+        cachedToken = token;
+        tokenTimestamp = Date.now();
+        
+        // Store token for cross-domain requests
+        if (window.location.hostname.includes('replit.app') || 
+            window.location.hostname.includes('probateswift.com')) {
+          localStorage.setItem('firebase_id_token', token);
+          sessionStorage.setItem('firebase_id_token', token);
+        }
+      } catch (error) {
+        console.error('[Firebase] Error refreshing token:', error);
       }
-    } catch (error) {
-      console.error('[Firebase] Token refresh failed:', error);
     }
-  }, REFRESH_INTERVAL);
-  
-  console.log('[Firebase] Token refresh mechanism initialized');
+  });
 }
 
 export default app;

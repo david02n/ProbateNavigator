@@ -1,529 +1,215 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { Redirect, useLocation, useRoute } from "wouter";
-import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
-import { auth } from "@/lib/firebase";
-import { getRedirectResult } from "firebase/auth";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { SwiftLogo } from "@/assets/SwiftLogo";
-import FirebaseAuthUI from "@/components/auth/FirebaseAuthUI";
-import { authService } from "@/lib/auth-service";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { auth } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
-import { ArrowRight } from "lucide-react";
 
-// Extend Window interface to include our shared functions
-declare global {
-  interface Window {
-    sharedAuthFunctions?: {
-      setActiveTab: (tab: string) => void;
-      loginFormEmail?: string;
-    };
-  }
+// Define types for FirebaseUI
+interface FirebaseUIError {
+  code: string;
+  message: string;
 }
 
-// Login form schema with validation
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-
-// Registration form schema with validation
-const registerSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Password must be at least 8 characters")
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"]
-});
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
-
-// Define props for AuthPage for better TypeScript support
-interface AuthPageProps {
-  tab?: string;
-  mobile?: boolean;
+interface AuthResult {
+  user: {
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+    uid: string;
+    getIdToken(forceRefresh?: boolean): Promise<string>;
+  };
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ tab }) => {
-  const { user, isLoading, loginMutation, registerMutation } = useAuth();
+export default function AuthPage() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>(tab || 'login');
-  const [location, setLocation] = useLocation();
-  const [isMobile, setIsMobile] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  
-  // Initialize tab from URL parameters or props and detect mobile mode
+  const uiContainerRef = useRef<HTMLDivElement>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [uiInstance, setUiInstance] = useState<any>(null);
+
   useEffect(() => {
-    // Get tab from URL if present
-    const searchParams = new URLSearchParams(window.location.search);
-    const tabParam = searchParams.get('tab');
-    const mobileParam = searchParams.get('mobile');
-    const authReturn = searchParams.get('state') || searchParams.get('authReturn');
-    
-    // Check mobile status from different sources
-    const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
-    setIsMobile(isMobileDevice || mobileParam === 'true');
-    
-    // Log for debugging
-    console.log('Auth page initialized');
-    console.log('URL location:', location);
-    console.log('Tab from props:', tab);
-    console.log('Tab from URL:', tabParam);
-    console.log('Mobile detection:', isMobileDevice, isIOS ? '(iOS)' : '');
-    console.log('Mobile from URL param:', mobileParam);
-    console.log('Auth return parameter:', authReturn);
-    
-    // Check for redirect results - this is critical for both mobile and production logins
-    console.log('Checking for redirect authentication result v1.0.18');
-    
-    // Process redirect result - this is the main authentication flow for mobile and production
-    (async () => {
+    let ui: any = null;
+
+    const initializeFirebaseUI = async () => {
       try {
-        // Enhanced debugging for the critical authentication process
-        console.log('AUTH FIX v1.0.18: Processing Google redirect on domain:', window.location.hostname);
-        console.log('AUTH FIX v1.0.18: Full URL:', window.location.href);
-        
-        // This is the critical line that processes the redirect from Google
-        // It must run on page load to complete the OAuth flow
-        const result = await getRedirectResult(auth);
-        
-        if (result && result.user) {
-          console.log('AUTH FIX v1.0.18: Authentication successful! User:', result.user.email);
-          
-          // Get the token to send to the backend
-          const idToken = await result.user.getIdToken();
-          console.log('AUTH FIX v1.0.18: Token obtained, length:', idToken.length);
-          
-          // Store token in localStorage for API requests
-          localStorage.setItem('firebase_id_token', idToken);
-          
-          // Call the backend to establish the session
-          try {
-            console.log('AUTH FIX v1.0.18: Sending token to backend');
-            const response = await fetch('/api/auth/google', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-              },
-              body: JSON.stringify({
-                idToken,
-                email: result.user.email,
-                displayName: result.user.displayName
-              }),
-              credentials: 'include'
-            });
-            
-            if (response.ok) {
-              console.log('Backend authentication successful');
-              console.log('Google login successful, redirecting to dashboard');
+        // Initialize FirebaseUI only if it hasn't been initialized yet
+        if (!window.firebaseui) {
+          console.error('FirebaseUI not loaded');
+          toast({
+            title: "Authentication Error",
+            description: "Authentication service is not available. Please try again later.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Get the FirebaseUI instance
+        ui = new window.firebaseui.auth.AuthUI(auth);
+
+        // Configure FirebaseUI
+        const uiConfig = {
+          signInOptions: [
+            // Google Sign-in
+            {
+              provider: window.firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+              customParameters: {
+                // Forces account selection even when one account is available
+                prompt: 'select_account'
+              }
+            },
+            // Email/Password Sign-in
+            {
+              provider: window.firebase.auth.EmailAuthProvider.PROVIDER_ID,
+              requireDisplayName: true,
+              signInMethod: window.firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD
+            }
+          ],
+          signInFlow: 'popup',
+          callbacks: {
+            signInSuccessWithAuthResult: (authResult: AuthResult) => {
+              // Handle successful sign-in
+              if (authResult.user) {
+                // Get the ID token for backend authentication
+                authResult.user.getIdToken().then(idToken => {
+                  // Store token
+                  localStorage.setItem('firebase_id_token', idToken);
+                  
+                  // Call backend to establish session
+                  fetch('/api/auth/session', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                      idToken,
+                      email: authResult.user.email,
+                      displayName: authResult.user.displayName,
+                      photoURL: authResult.user.photoURL,
+                      uid: authResult.user.uid
+                    }),
+                    credentials: 'include'
+                  }).then(response => {
+                    if (response.ok) {
+                      toast({
+                        title: "Sign in successful",
+                        description: `Welcome${authResult.user.displayName ? ', ' + authResult.user.displayName : ''}!`,
+                      });
+                      // Redirect to home page
+                      window.location.href = '/';
+                    } else {
+                      throw new Error('Failed to establish session');
+                    }
+                  }).catch(error => {
+                    console.error('Session establishment error:', error);
+                    toast({
+                      title: "Sign in failed",
+                      description: "Could not establish session with the server. Please try again.",
+                      variant: "destructive",
+                    });
+                  });
+                });
+              }
+              return false; // Prevent redirect
+            },
+            signInFailure: (error: FirebaseUIError) => {
+              // Handle sign-in failure
+              console.error('FirebaseUI sign-in error:', error);
+              let errorMessage = 'An error occurred during sign in.';
               
-              // Redirect to dashboard after successful login
-              window.location.href = '/';
-            } else {
-              console.error('Backend authentication failed:', await response.text());
+              if (error.code === 'auth/popup-blocked') {
+                errorMessage = 'Please allow popups for this website to sign in.';
+              } else if (error.code === 'auth/popup-closed-by-user') {
+                errorMessage = 'Sign in was cancelled. Please try again.';
+              } else if (error.code === 'auth/cancelled-popup-request') {
+                // This is a normal case when multiple popups are triggered
+                return;
+              } else if (error.code === 'auth/account-exists-with-different-credential') {
+                errorMessage = 'An account already exists with the same email address but different sign-in credentials.';
+              } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Please enter a valid email address.';
+              } else if (error.code === 'auth/user-disabled') {
+                errorMessage = 'This account has been disabled. Please contact support.';
+              } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                errorMessage = 'Invalid email or password.';
+              } else if (error.code === 'auth/too-many-requests') {
+                errorMessage = 'Too many failed sign-in attempts. Please try again later.';
+              }
+
               toast({
-                title: "Server Authentication Error",
-                description: "Your Google login was successful, but the server couldn't complete authentication.",
+                title: "Sign in failed",
+                description: errorMessage,
                 variant: "destructive",
               });
             }
-          } catch (backendError) {
-            console.error('Error calling backend:', backendError);
+          },
+          // Other UI customization options
+          tosUrl: '/terms',
+          privacyPolicyUrl: '/privacy',
+          signInSuccessUrl: '/',
+          siteName: 'ProbateSwift',
+          // Customize the UI
+          uiShown: () => {
+            setIsInitializing(false);
           }
-        } else {
-          console.log('AUTH FIX v1.0.18: No redirect result found - normal page load');
-          console.log('No redirect result found - user may need to log in');
+        };
+
+        // Start FirebaseUI
+        if (uiContainerRef.current) {
+          ui.start('#firebaseui-auth-container', uiConfig);
+          setUiInstance(ui);
         }
       } catch (error) {
-        console.error('Error handling authentication redirect:', error);
-        
-        // Improved error handling for all platforms
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Authentication redirect error details:', errorMessage);
-        
-        // Show a user-friendly error on all platforms
-        if (isMobileDevice || isIOS) {
-          alert('There was a problem with your login. Please try again.');
-        }
+        console.error('Error initializing FirebaseUI:', error);
+        toast({
+          title: "Authentication Error",
+          description: "Failed to initialize authentication service. Please try again later.",
+          variant: "destructive",
+        });
+        setIsInitializing(false);
       }
-    })();
-    
-    // Set tab based on available data
-    if (tabParam === 'register' || tabParam === 'login') {
-      console.log('Setting tab from URL param:', tabParam);
-      setActiveTab(tabParam);
-    } else if (tab === 'register' || tab === 'login') {
-      console.log('Setting tab from props:', tab);
-      setActiveTab(tab);
-    }
-    
-    // Handle hash fragments (common in mobile browsers)
-    if (window.location.hash) {
-      if (window.location.hash.includes('tab=')) {
-        const hashTab = window.location.hash.includes('tab=register') ? 'register' : 'login';
-        console.log('Setting tab from hash:', hashTab);
-        setActiveTab(hashTab);
-      }
-      if (window.location.hash.includes('mobile=true')) {
-        console.log('Mobile mode from hash detected');
-        setIsMobile(true);
-      }
-    }
-    
-    // Add meta tags for better mobile handling
-    if (isMobileDevice) {
-      // For very old browsers
-      const viewportMeta = document.querySelector('meta[name="viewport"]');
-      if (viewportMeta) {
-        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
-      }
-    }
-  }, [tab, location]);
-  
-  // Share the setActiveTab function with the parent window for error handling
-  window.sharedAuthFunctions = {
-    setActiveTab
-  };
-
-  // Login form setup
-  const loginForm = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  // Register form setup
-  const registerForm = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  // Handle login submission with special mobile handling
-  const onLoginSubmit = (values: LoginFormValues) => {
-    // Save email in shared window object to aid in potential login retries
-    if (window.sharedAuthFunctions) {
-      window.sharedAuthFunctions.loginFormEmail = values.email;
-    }
-    
-    // Log for debugging mobile issues
-    if (isMobile) {
-      console.log('Mobile login submission with special handling');
-    }
-    
-    loginMutation.mutate(values, {
-      onSuccess: (data) => {
-        console.log('Login successful');
-        // For mobile devices, use direct navigation for more reliable redirect
-        if (isMobile) {
-          console.log('Using direct navigation for mobile login success');
-          // Small delay to allow cookies to be set
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 100);
-        }
-      },
-      onError: (error) => {
-        console.error('Login error:', error);
-        // For mobile, show clear error and provide guidance
-        if (isMobile) {
-          alert('Login failed. Please check your credentials and try again.');
-        }
-      }
-    });
-  };
-
-  // Handle register submission with special mobile handling
-  const onRegisterSubmit = (values: RegisterFormValues) => {
-    // Get assessment data from localStorage if available
-    const savedResult = localStorage.getItem('probate_assessment_result');
-    const savedAnswers = localStorage.getItem('probate_assessment_answers');
-    
-    // Add metadata to track that the user came from an assessment
-    const userRegisterData = {
-      ...values,
-      assessment: savedResult ? {
-        result: JSON.parse(savedResult),
-        answers: savedAnswers ? JSON.parse(savedAnswers) : {},
-      } : undefined
     };
-    
-    // Log for debugging mobile issues
-    if (isMobile) {
-      console.log('Mobile registration submission with special handling');
-    }
-    
-    registerMutation.mutate(userRegisterData, {
-      onSuccess: (data) => {
-        console.log('Registration successful');
-        // For mobile devices, use direct navigation for more reliable redirect
-        if (isMobile) {
-          console.log('Using direct navigation for mobile registration success');
-          // Small delay to allow cookies to be set
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 100);
-        }
-      },
-      onError: (error) => {
-        console.error('Registration error:', error);
-        // For mobile, show clear error and provide guidance
-        if (isMobile) {
-          alert('Registration failed. The email might already be in use or there was a server error.');
-        }
+
+    initializeFirebaseUI();
+
+    // Cleanup function
+    return () => {
+      if (ui) {
+        ui.reset();
       }
-    });
-  };
-
-  // Enhanced redirect handling for mobile and desktop browsers
-  useEffect(() => {
-    // If user is authenticated, redirect programmatically
-    // This is more reliable on mobile browsers
-    if (user && !isLoading) {
-      console.log('User is authenticated, redirecting to dashboard');
-      
-      // Use window.location for more reliable mobile redirects
-      if (/Mobi|Android/i.test(navigator.userAgent)) {
-        console.log('Mobile browser detected, using window.location');
-        window.location.href = '/';
+      if (uiInstance) {
+        uiInstance.reset();
       }
-      // Otherwise let Wouter handle it via the return
-    }
-  }, [user, isLoading]);
-  
-  // Redirect if already logged in (will be used if useEffect redirect doesn't trigger)
-  if (user) {
-    console.log('Redirecting with Wouter');
-    return <Redirect to="/" />;
-  }
-
-  const handleRegister = async (data: RegisterFormValues) => {
-    try {
-      setIsRegistering(true);
-      await authService.registerWithEmail(data.email, data.password);
-      
-      toast({
-        title: 'Registration successful',
-        description: 'Welcome to ProbateSwift!',
-      });
-      
-      setLocation('/');
-    } catch (error) {
-      toast({
-        title: 'Registration failed',
-        description: error instanceof Error ? error.message : 'Failed to register',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsRegistering(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-soft-grey to-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+    };
+  }, [toast]);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-soft-grey to-white">
-      <div className="text-xs text-gray-400 absolute bottom-1 right-2">v1.0.17-May19-0830</div>
-      <div className="flex flex-col md:flex-row w-full">
-        {/* Authentication Form Column */}
-        <div className="w-full md:w-1/2 p-6 md:p-12 flex items-center justify-center">
-          <Tabs
-            defaultValue="login"
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+    <div className="container flex items-center justify-center min-h-screen py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Welcome to ProbateSwift</CardTitle>
+          <CardDescription>
+            Sign in to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-1">
+              <TabsTrigger value="login">Sign In</TabsTrigger>
             </TabsList>
-
-            {/* Login Tab with FirebaseUI */}
             <TabsContent value="login">
-              <FirebaseAuthUI
-                onSignInError={(error: Error) => {
-                  toast({
-                    title: 'Login failed',
-                    description: error.message,
-                    variant: 'destructive',
-                  });
-                }}
-              />
-            </TabsContent>
-
-            {/* Register Tab */}
-            <TabsContent value="register">
-              <Card className="w-full max-w-md shadow-lg">
-                <CardHeader className="space-y-1 flex flex-col items-center">
-                  <SwiftLogo className="h-12 w-auto mb-4" />
-                  <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-                  <CardDescription className="text-center">
-                    Sign up to get started with probate
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        {...registerForm.register('email')}
-                      />
-                      {registerForm.formState.errors.email && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Create a password"
-                        {...registerForm.register('password')}
-                      />
-                      {registerForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        placeholder="Confirm your password"
-                        {...registerForm.register('confirmPassword')}
-                      />
-                      {registerForm.formState.errors.confirmPassword && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
-                      )}
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={isRegistering}
-                    >
-                      {isRegistering ? 'Creating Account...' : 'Create Account'}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+              {isInitializing ? (
+                <div className="flex flex-col items-center justify-center p-6 space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading sign-in options...</p>
+                </div>
+              ) : (
+                <div id="firebaseui-auth-container" ref={uiContainerRef} className="min-h-[300px]" />
+              )}
             </TabsContent>
           </Tabs>
-        </div>
-
-        {/* Hero/Information Column */}
-        <div className="hidden md:flex md:w-1/2 bg-primary text-white p-12 flex-col justify-center">
-          <div className="max-w-xl mx-auto">
-            <h1 className="text-4xl font-bold mb-6">Simplify Your Probate Journey</h1>
-            <p className="text-lg mb-8">
-              ProbateSwift helps you navigate the probate process with ease, providing step-by-step guidance
-              tailored to your specific situation.
-            </p>
-            <div className="grid grid-cols-1 gap-6">
-              <div className="flex items-start">
-                <div className="bg-white/10 p-3 rounded-full mr-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">Secure & Confidential</h3>
-                  <p className="text-white/80">
-                    Your information is encrypted and protected throughout the process
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <div className="bg-white/10 p-3 rounded-full mr-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">Fast & Efficient</h3>
-                  <p className="text-white/80">
-                    Save time with our streamlined process and intelligent guidance
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <div className="bg-white/10 p-3 rounded-full mr-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">Expert Support</h3>
-                  <p className="text-white/80">
-                    Get assistance whenever you need it with our AI-powered chat support
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default AuthPage;
+}

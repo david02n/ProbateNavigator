@@ -1,12 +1,15 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
   useQuery,
   useMutation,
   UseMutationResult,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { auth } from "@/lib/firebase";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 // Declare the window interface for sharing auth functions
 declare global {
@@ -18,50 +21,80 @@ declare global {
   }
 }
 
-// Define authentication types
-type AuthUser = Omit<User, "password">;
+// Firebase user type
+interface FirebaseUser {
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  uid: string;
+  getIdToken(forceRefresh?: boolean): Promise<string>;
+}
 
-type AuthContextType = {
+// Backend user type
+interface AuthUser {
+  id: number;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  photoURL: string | null;
+  firebaseUid: string | null;
+  isGuest: boolean;
+}
+
+// Auth context type
+interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<AuthUser, Error, LoginCredentials>;
-  logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<AuthUser, Error, RegisterCredentials>;
-};
+  logout: () => Promise<void>;
+}
 
-type LoginCredentials = {
-  email: string;
-  password: string;
-};
-
-type RegisterCredentials = {
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-};
-
-// Create the auth context
-export const AuthContext = createContext<AuthContextType | null>(null);
+// Create auth context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Auth provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   
-  // Detect mobile browsers for special handling
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
-  // Query for getting the current user
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<AuthUser | null>({
+  // Initialize auth state
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user: FirebaseUser | null) => {
+      if (user) {
+        try {
+          // Get the ID token
+          const idToken = await user.getIdToken(true);
+          
+          // Store token
+          localStorage.setItem('firebase_id_token', idToken);
+          
+          // Update user state
+          setFirebaseUser(user);
+        } catch (error) {
+          console.error('Error getting ID token:', error);
+          setFirebaseUser(null);
+          localStorage.removeItem('firebase_id_token');
+        }
+      } else {
+        setFirebaseUser(null);
+        localStorage.removeItem('firebase_id_token');
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Query for getting the backend user data
+  const { data: authUser, error } = useQuery<AuthUser | null>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!firebaseUser, // Only fetch when we have a Firebase user
   });
-  
+
   // For mobile browsers, log any authentication issues
   if (isMobile && error) {
     console.error('Mobile auth error:', error);
@@ -74,101 +107,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginCredentials) => {
-      // For mobile devices, store login timestamp for session verification
-      if (isMobile) {
-        console.log('Mobile login attempt for:', credentials.email);
-        localStorage.setItem('mobile_auth_timestamp', Date.now().toString());
-        localStorage.setItem('mobile_last_email', credentials.email);
-      }
-      
-      const res = await apiRequest("POST", "/api/login", credentials);
-      const data = await res.json();
-      return data;
-    },
-    onSuccess: (user: AuthUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      
-      // Store successful auth result in localStorage for mobile session recovery
-      if (isMobile) {
-        console.log('Mobile login successful, storing session data');
-        localStorage.setItem('mobile_auth_success', 'true');
-        localStorage.setItem('mobile_auth_user', JSON.stringify({
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName
-        }));
-      }
-      
-      toast({
-        title: "Login successful",
-        description: `Welcome back${user.firstName ? ', ' + user.firstName : ''}!`,
-      });
-      
-      // Redirect to the root path which renders the dashboard
-      window.location.href = "/";
-    },
-    onError: (error: Error) => {
-      // Record login errors for mobile troubleshooting
-      if (isMobile) {
-        console.error('Mobile login error:', error);
-        localStorage.setItem('mobile_auth_error', error.message);
-      }
-      
-      // For all login errors, show a toast but don't automatically redirect
-      toast({
-        title: "Login failed",
-        description: error.message || "Invalid email or password",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Register mutation
-  const registerMutation = useMutation({
-    mutationFn: async (credentials: RegisterCredentials) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      const data = await res.json();
-      return data;
-    },
-    onSuccess: (user: AuthUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      // Clear assessment data from localStorage as it's now saved to the database
-      localStorage.removeItem('probate_assessment_result');
-      localStorage.removeItem('probate_assessment_answers');
-      
-      toast({
-        title: "Registration successful",
-        description: `Welcome to ProbateSwift${user.firstName ? ', ' + user.firstName : ''}!`,
-      });
-      
-      // Query assessment data right away
-      queryClient.invalidateQueries({ queryKey: ["/api/assessment"] });
-      
-      // Redirect to the root path which renders the dashboard
-      window.location.href = "/";
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message || "Could not create account",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
       // First sign out from Firebase
       try {
         console.log("Logging out from Firebase");
-        const firebaseModule = await import('../lib/firebase');
-        const auth = firebaseModule.auth;
-        
-        // Sign out from Firebase first
         await auth.signOut();
         console.log("Successfully logged out from Firebase");
       } catch (e) {
@@ -196,77 +140,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     onSuccess: () => {
-      // Clear all query cache data including user data
+      // Clear query cache
       queryClient.clear();
       
-      // Explicitly set user data to null
-      queryClient.setQueryData(["/api/user"], null);
-      
-      // Additional token cleanup for production
-      if (window.location.hostname.includes('probateswift.com')) {
-        console.log("PRODUCTION: Additional token cleanup for probateswift.com");
-        
-        // Clear any global tokens that might exist
-        if ((window as any).__lastAuthToken) {
-          (window as any).__lastAuthToken = null;
-        }
-        
-        if ((window as any).__authDebug) {
-          (window as any).__authDebug = null;
-        }
-      }
+      // Reset user state
+      setFirebaseUser(null);
       
       toast({
-        title: "Logged out",
-        description: "You have been successfully logged out",
+        title: "Logged out successfully",
+        description: "You have been signed out of your account.",
       });
-      
-      // Force page reload with special logout parameter to ensure all state is reset
-      const timestamp = new Date().getTime();
-      window.location.href = `/?logout=${timestamp}&t=${timestamp}`;
     },
-    onError: (error: Error) => {
-      console.error("Logout mutation error:", error);
-      
+    onError: (error) => {
+      console.error("Logout error:", error);
       toast({
-        title: "Logout process completed with warnings",
-        description: "You've been logged out, but there were some warnings. Please refresh the page.",
+        title: "Logout failed",
+        description: "There was a problem signing out. Please try again.",
         variant: "destructive",
       });
-      
-      // Clear tokens even on error
-      localStorage.removeItem('firebase_id_token');
-      sessionStorage.removeItem('firebase_id_token');
-      
-      // Force page reload even on error
-      setTimeout(() => {
-        const timestamp = new Date().getTime();
-        window.location.href = `/?logout=${timestamp}&forceClear=true`;
-      }, 1500);
     },
   });
 
+  // Create context value
+  const contextValue: AuthContextType = {
+    user: authUser || null,
+    isLoading: isLoading || Boolean(queryClient.isFetching()),
+    error: error as Error | null,
+    logout: () => logoutMutation.mutateAsync(),
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user: user || null,
-        isLoading,
-        error,
-        loginMutation,
-        logoutMutation,
-        registerMutation,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Custom hook for using auth context
+// Custom hook to use auth context
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

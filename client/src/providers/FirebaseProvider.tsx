@@ -30,13 +30,19 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
         console.log('[Firebase] Starting initialization...');
         console.log('[Firebase] Current hostname:', window.location.hostname);
 
-        // Check if Firebase is already initialized
-        const existingApps = getApps();
-        let firebaseApp: FirebaseApp;
+        // Initialize Firebase with safer app checking
+        let app: FirebaseApp;
+        let existingApps: FirebaseApp[] = [];
+
+        try {
+          existingApps = getApps() || [];
+        } catch (error) {
+          console.warn('[Firebase] Error checking existing apps, proceeding with new initialization:', error);
+          existingApps = [];
+        }
 
         if (existingApps.length > 0) {
-          // Use existing app
-          firebaseApp = existingApps[0];
+          app = existingApps[0];
           console.log('[Firebase] Using existing Firebase app');
         } else {
           // Initialize new Firebase app

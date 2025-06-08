@@ -54,7 +54,7 @@ export function GoogleSignInButton({
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    
+
     try {
       // Validate auth instance
       if (!auth) {
@@ -65,7 +65,7 @@ export function GoogleSignInButton({
       console.log('[GoogleSignIn] Auth instance:', auth);
       console.log('[GoogleSignIn] Current domain:', window.location.hostname);
       console.log('[GoogleSignIn] Auth domain:', auth.app.options.authDomain);
-      
+
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account',
@@ -77,7 +77,7 @@ export function GoogleSignInButton({
       // Check if we're on Replit and use redirect instead of popup
       const isReplitDomain = window.location.hostname.includes('replit.dev') || 
                             window.location.hostname.includes('kirk.replit.dev');
-      
+
       if (isReplitDomain) {
         console.log('[GoogleSignIn] Replit domain detected, using redirect method');
         setIsRedirecting(true);
@@ -94,19 +94,19 @@ export function GoogleSignInButton({
         await handleSignInSuccess(result);
       } catch (popupError: any) {
         console.error('[GoogleSignIn] Popup error:', popupError);
-        
+
         // If popup is blocked or closed, try redirect
         if (popupError.code === 'auth/popup-blocked' || 
             popupError.code === 'auth/popup-closed-by-user' ||
             popupError.code === 'auth/cancelled-popup-request' ||
             popupError.code === 'auth/popup-closed-by-user') {
-          
+
           console.log('[GoogleSignIn] Popup blocked, trying redirect...');
           toast({
             title: "Popup blocked",
             description: "Redirecting to Google sign-in...",
           });
-          
+
           setIsRedirecting(true);
           await signInWithRedirect(auth, provider);
           // The page will redirect, so we don't need to handle the result here
@@ -116,7 +116,7 @@ export function GoogleSignInButton({
       }
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      
+
       // Log detailed error information for debugging
       console.error('[GoogleSignIn] Detailed error info:', {
         error: error,
@@ -128,9 +128,9 @@ export function GoogleSignInButton({
         timestamp: new Date().toISOString(),
         authDomain: auth?.app?.options?.authDomain
       });
-      
+
       let errorMessage = 'Failed to sign in with Google.';
-      
+
       if (error.code === 'auth/account-exists-with-different-credential') {
         errorMessage = 'An account already exists with the same email address but different sign-in credentials.';
       } else if (error.code === 'auth/invalid-credential') {
@@ -167,10 +167,10 @@ export function GoogleSignInButton({
     try {
       const { user } = result;
       const idToken = await user.getIdToken();
-      
+
       // Store token
       localStorage.setItem('firebase_id_token', idToken);
-      
+
       // Call backend to establish session
       const response = await fetch('/api/auth/session', {
         method: 'POST',
@@ -193,7 +193,7 @@ export function GoogleSignInButton({
           title: "Sign in successful",
           description: `Welcome${user.displayName ? ', ' + user.displayName : ''}!`,
         });
-        
+
         // Force a page reload to ensure auth state is properly updated
         window.location.reload();
       } else {
@@ -247,4 +247,4 @@ export function GoogleSignInButton({
       {children}
     </Button>
   );
-} 
+}

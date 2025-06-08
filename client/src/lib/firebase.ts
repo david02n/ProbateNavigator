@@ -22,10 +22,10 @@ const firebaseConfig = {
 const getFirebaseConfig = () => {
   const currentDomain = window.location.hostname;
   const isReplitDomain = currentDomain.includes('replit.dev') || currentDomain.includes('kirk.replit.dev');
-  
+
   // Create a copy of the config
   const config = { ...firebaseConfig };
-  
+
   if (isReplitDomain) {
     // For Replit domains, use the current domain as auth domain
     // This ensures the auth domain matches the current domain
@@ -34,7 +34,7 @@ const getFirebaseConfig = () => {
   } else {
     console.log('[Firebase] Running on production domain, using configured auth domain');
   }
-  
+
   return config;
 };
 
@@ -43,23 +43,23 @@ function validateFirebaseConfig() {
   const config = getFirebaseConfig();
   const requiredFields = ['apiKey', 'authDomain', 'projectId'];
   const missingFields = requiredFields.filter(field => !config[field as keyof typeof config]);
-  
+
   if (missingFields.length > 0) {
     console.error('[Firebase] Missing required configuration fields:', missingFields);
     throw new Error(`Missing required Firebase configuration: ${missingFields.join(', ')}`);
   }
-  
+
   // Check for domain mismatch
   const currentDomain = window.location.hostname;
   const configuredAuthDomain = config.authDomain;
-  
+
   console.log('[Firebase] Configuration validation passed');
   console.log('[Firebase] Project ID:', config.projectId);
   console.log('[Firebase] Auth Domain:', configuredAuthDomain);
   console.log('[Firebase] Current Domain:', currentDomain);
   console.log('[Firebase] API Key:', config.apiKey ? 'Set' : 'Missing');
   console.log('[Firebase] App ID:', config.appId ? 'Set' : 'Missing');
-  
+
   // Warn about domain mismatch
   if (configuredAuthDomain && currentDomain !== configuredAuthDomain) {
     console.warn('[Firebase] DOMAIN MISMATCH WARNING:');
@@ -79,15 +79,25 @@ let fallbackAnalytics: Analytics | null = null;
 // Initialize Firebase if not already initialized
 function ensureFirebaseInitialized(): { app: FirebaseApp; auth: Auth } {
   if (!fallbackApp) {
-    const existingApps = getApps();
-    
+    let existingApps: FirebaseApp[] = [];
+
+    try {
+      // Safe way to check for existing apps
+      if (typeof getApps === 'function') {
+        existingApps = getApps() || [];
+      }
+    } catch (error) {
+      console.error('[Firebase] Error getting existing apps:', error);
+      existingApps = [];
+    }
+
     if (existingApps.length > 0) {
       fallbackApp = existingApps[0];
       console.log('[Firebase] Using existing Firebase app');
     } else {
       // Validate required config
       validateFirebaseConfig();
-      
+
       try {
         const config = getFirebaseConfig();
         fallbackApp = initializeApp(config);
@@ -97,23 +107,23 @@ function ensureFirebaseInitialized(): { app: FirebaseApp; auth: Auth } {
         throw new Error(`Firebase app initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
-    
+
     try {
       fallbackAuth = getAuth(fallbackApp);
-      
+
       // CRITICAL: Ensure no emulator connection
       console.log('[Firebase] Auth instance created - PRODUCTION MODE ONLY');
-      
+
     } catch (error) {
       console.error('[Firebase] Failed to create auth instance:', error);
       throw new Error(`Firebase auth initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-  
+
   if (!fallbackApp || !fallbackAuth) {
     throw new Error('Firebase initialization failed');
   }
-  
+
   return { app: fallbackApp, auth: fallbackAuth };
 }
 
@@ -147,12 +157,12 @@ export const analytics = (async () => {
 export async function waitForAuthInit(): Promise<void> {
   return new Promise((resolve) => {
     const { auth: currentAuth } = ensureFirebaseInitialized();
-    
+
     if (currentAuth.currentUser) {
       console.log("[Firebase] Auth already initialized with user:", currentAuth.currentUser.email);
       return resolve();
     }
-    
+
     const unsubscribe = currentAuth.onAuthStateChanged((user: any) => {
       unsubscribe();
       console.log("[Firebase] Auth initialized:", user ? `with user ${user.email}` : "no user");
@@ -174,11 +184,11 @@ export async function getFreshToken(): Promise<string | null> {
   }
 
   await waitForAuthInit();
-  
+
   try {
     const { auth: currentAuth } = ensureFirebaseInitialized();
     const user = currentAuth.currentUser;
-    
+
     if (!user) {
       cachedToken = null;
       tokenTimestamp = 0;
@@ -208,7 +218,7 @@ export async function getFreshToken(): Promise<string | null> {
 // Initialize token refresh mechanism
 export function initTokenRefresh() {
   const { auth: currentAuth } = ensureFirebaseInitialized();
-  
+
   // Set up token refresh listener
   currentAuth.onIdTokenChanged(async (user: any) => {
     if (user) {
@@ -216,7 +226,7 @@ export function initTokenRefresh() {
         const token = await user.getIdToken(true);
         cachedToken = token;
         tokenTimestamp = Date.now();
-        
+
         // Store token for cross-domain requests
         if (window.location.hostname.includes('replit.app') || 
             window.location.hostname.includes('probateswift.com')) {

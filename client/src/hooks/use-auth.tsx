@@ -2,7 +2,7 @@ import { createContext, ReactNode, useContext, useState, useEffect } from "react
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
-import { auth } from "@/lib/firebase";
+import { useFirebase } from "@/providers/FirebaseProvider";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { auth, isInitialized } = useFirebase();
 
   // This auth state listener will be set up in the second useEffect below
 
@@ -56,8 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // First sign out from Firebase
       try {
         console.log("Logging out from Firebase");
-        await auth.signOut();
-        console.log("Successfully logged out from Firebase");
+        if (auth) {
+          await auth.signOut();
+          console.log("Successfully logged out from Firebase");
+        }
       } catch (e) {
         console.error("Error signing out from Firebase:", e);
         // Continue with logout process even if Firebase logout fails
@@ -114,9 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Listen to Firebase auth state changes (single listener)
   useEffect(() => {
-    if (!auth) {
-      console.log('[AUTH] Firebase auth not initialized');
-      setIsLoading(false);
+    if (!isInitialized || !auth) {
+      console.log('[AUTH] Firebase not ready yet');
+      if (isInitialized) {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -153,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AUTH] Cleaning up auth listener');
       unsubscribe();
     };
-  }, []);
+  }, [isInitialized, auth]);
 
   return (
     <AuthContext.Provider value={contextValue}>

@@ -9,6 +9,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import { AuthPage } from "@/pages/auth-page";
 import { SignupPage } from "@/pages/signup-page";
+import { DebugApp } from "@/components/DebugApp";
+import { AppFallback } from "@/components/AppFallback";
 
 // New redesigned pages
 import NewDashboardPage from "@/pages/new-dashboard";
@@ -178,16 +180,19 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <FirebaseProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-          </TooltipProvider>
-        </AuthProvider>
-      </FirebaseProvider>
-    </QueryClientProvider>
+    <AppFallback>
+      <QueryClientProvider client={queryClient}>
+        <FirebaseProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <DebugApp />
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </AuthProvider>
+        </FirebaseProvider>
+      </QueryClientProvider>
+    </AppFallback>
   );
 }
 

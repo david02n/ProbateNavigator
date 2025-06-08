@@ -27,6 +27,9 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
   useEffect(() => {
     const initializeFirebase = async () => {
       try {
+        console.log('[Firebase] Starting initialization...');
+        console.log('[Firebase] Current hostname:', window.location.hostname);
+        
         // Check if Firebase is already initialized
         const existingApps = getApps();
         let firebaseApp: FirebaseApp;
@@ -46,6 +49,12 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
             appId: import.meta.env.VITE_FIREBASE_APP_ID,
             measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
           };
+
+          // Log configuration status
+          console.log('[Firebase] Configuration check:');
+          console.log('[Firebase] API Key:', firebaseConfig.apiKey ? 'Set' : 'Missing');
+          console.log('[Firebase] Project ID:', firebaseConfig.projectId ? 'Set' : 'Missing');
+          console.log('[Firebase] Auth Domain:', firebaseConfig.authDomain ? 'Set' : 'Missing');
 
           // Validate required config
           if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {

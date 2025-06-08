@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { getRedirectResult, signInWithPopup, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
 import { useFirebase } from '@/providers/FirebaseProvider';
 import { useAuthStore } from '@/stores/auth-store';
@@ -13,7 +13,6 @@ import { EmailSignInForm } from '@/components/auth/EmailSignInForm';
 
 export function SignupPage() {
   const [, setLocation] = useLocation();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { auth, isInitialized, error: firebaseError } = useFirebase();
   const { setError, setFirebaseUser } = useAuthStore();
@@ -205,7 +204,7 @@ export function SignupPage() {
         });
         
         // Redirect to dashboard
-        navigate('/dashboard');
+        setLocation('/dashboard');
       } else {
         throw new Error('Failed to establish session');
       }
@@ -373,7 +372,7 @@ export function SignupPage() {
         <div className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
           <button 
-            onClick={() => navigate('/auth')}
+            onClick={() => setLocation('/auth')}
             className="underline hover:text-primary"
           >
             Sign in here

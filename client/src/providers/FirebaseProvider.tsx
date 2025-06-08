@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, onAuthStateChanged } from 'firebase/auth';
 import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
 
 interface FirebaseContextType {
@@ -29,7 +29,7 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
       try {
         console.log('[Firebase] Starting initialization...');
         console.log('[Firebase] Current hostname:', window.location.hostname);
-        
+
         // Check if Firebase is already initialized
         const existingApps = getApps();
         let firebaseApp: FirebaseApp;
@@ -64,7 +64,7 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
           // Dynamic auth domain configuration for Replit domains
           const currentDomain = window.location.hostname;
           const isReplitDomain = currentDomain.includes('replit.dev') || currentDomain.includes('kirk.replit.dev');
-          
+
           if (isReplitDomain) {
             // For Replit domains, use the current domain as auth domain
             firebaseConfig.authDomain = currentDomain;
@@ -75,7 +75,7 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
 
           // Check for domain mismatch (this should now be resolved)
           const configuredAuthDomain = firebaseConfig.authDomain;
-          
+
           if (configuredAuthDomain && currentDomain !== configuredAuthDomain) {
             console.warn('[Firebase] DOMAIN MISMATCH WARNING:');
             console.warn(`[Firebase] Current domain: ${currentDomain}`);
@@ -92,7 +92,7 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
         // Initialize Auth
         const firebaseAuth = getAuth(firebaseApp);
         console.log('[Firebase] Auth initialized in production mode');
-        
+
         // Initialize Analytics conditionally
         let firebaseAnalytics: Analytics | null = null;
         try {
@@ -112,6 +112,17 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
         setError(null);
 
         console.log('[Firebase] Firebase initialization completed');
+
+        // Clean up Firebase initialization and reduce logging conflicts
+        const auth = getAuth();
+        console.log('[Firebase] Setting up auth state listener');
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            console.log('[Firebase] Auth state changed:', user ? user.email : 'No user');
+        });
+        const currentUser = auth.currentUser;
+        console.log('[Firebase] Current user:', currentUser ? currentUser.email : 'No user');
+
+        return () => unsubscribe();
       } catch (err) {
         console.error('[Firebase] Initialization error:', err);
         setError(err as Error);
@@ -143,4 +154,4 @@ export function useFirebase() {
     throw new Error('useFirebase must be used within a FirebaseProvider');
   }
   return context;
-} 
+}

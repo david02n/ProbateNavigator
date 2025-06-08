@@ -91,12 +91,12 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
             console.warn('[Firebase] 2. Or update your environment variables to match the current domain');
           }
 
-          firebaseApp = initializeApp(firebaseConfig);
+          app = initializeApp(firebaseConfig);
           console.log('[Firebase] Firebase app initialized successfully');
         }
 
         // Initialize Auth
-        const firebaseAuth = getAuth(firebaseApp);
+        const firebaseAuth = getAuth(app);
         console.log('[Firebase] Auth initialized in production mode');
 
         // Initialize Analytics conditionally
@@ -104,14 +104,14 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
         try {
           const analyticsSupported = await isSupported();
           if (analyticsSupported) {
-            firebaseAnalytics = getAnalytics(firebaseApp);
+            firebaseAnalytics = getAnalytics(app);
             console.log('[Firebase] Analytics initialized');
           }
         } catch (analyticsError) {
           console.warn('[Firebase] Analytics initialization failed:', analyticsError);
         }
 
-        setApp(firebaseApp);
+        setApp(app);
         setAuth(firebaseAuth);
         setAnalytics(firebaseAnalytics);
         setIsInitialized(true);

@@ -36,33 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  // Initialize auth state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-      if (user) {
-        try {
-          // Get the ID token
-          const idToken = await user.getIdToken(true);
-
-          // Store token
-          localStorage.setItem('firebase_id_token', idToken);
-
-          // Update user state
-          setFirebaseUser(user);
-        } catch (error) {
-          console.error('Error getting ID token:', error);
-          setFirebaseUser(null);
-          localStorage.removeItem('firebase_id_token');
-        }
-      } else {
-        setFirebaseUser(null);
-        localStorage.removeItem('firebase_id_token');
-      }
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // This auth state listener will be set up in the second useEffect below
 
   // Query for getting the backend user data
   const { data: authUser, error } = useQuery<AuthUser | null>({
@@ -138,18 +112,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout: () => logoutMutation.mutateAsync(),
   };
 
-  // Listen to Firebase auth state changes
+  // Listen to Firebase auth state changes (single listener)
   useEffect(() => {
     if (!auth) {
-      console.log('[DEBUG] Firebase auth not initialized');
+      console.log('[AUTH] Firebase auth not initialized');
       setIsLoading(false);
       return;
     }
 
-    console.log('[DEBUG] Setting up Firebase auth listener');
+    console.log('[AUTH] Setting up Firebase auth listener');
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('[DEBUG] Firebase auth state changed!');
-      console.log('[DEBUG] Firebase user:', firebaseUser ? firebaseUser.email : 'No user logged in');
+      console.log('[AUTH] Firebase auth state changed!');
+      console.log('[AUTH] Firebase user:', firebaseUser ? firebaseUser.email : 'No user logged in');
 
       if (firebaseUser) {
         try {
@@ -161,19 +135,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           // Update user state
           setFirebaseUser(firebaseUser);
+          console.log('[AUTH] User authenticated successfully');
         } catch (error) {
-          console.error('Error getting ID token:', error);
+          console.error('[AUTH] Error getting ID token:', error);
           setFirebaseUser(null);
           localStorage.removeItem('firebase_id_token');
         }
       } else {
         setFirebaseUser(null);
         localStorage.removeItem('firebase_id_token');
+        console.log('[AUTH] User signed out');
       }
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('[AUTH] Cleaning up auth listener');
+      unsubscribe();
+    };
   }, []);
 
   return (

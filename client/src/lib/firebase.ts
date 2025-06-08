@@ -100,7 +100,10 @@ function ensureFirebaseInitialized(): { app: FirebaseApp; auth: Auth } {
     
     try {
       fallbackAuth = getAuth(fallbackApp);
-      console.log('[Firebase] Auth instance created');
+      
+      // CRITICAL: Ensure no emulator connection
+      console.log('[Firebase] Auth instance created - PRODUCTION MODE ONLY');
+      
     } catch (error) {
       console.error('[Firebase] Failed to create auth instance:', error);
       throw new Error(`Firebase auth initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

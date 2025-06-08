@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import { SimpleAuthPage } from "@/pages/SimpleAuthPage";
+import { AuthPage } from "@/pages/auth-page";
 import { SignupPage } from "@/pages/signup-page";
 
 import { AppFallback } from "@/components/AppFallback";
@@ -52,7 +52,7 @@ function Router() {
       <Route path="/auth/callback" component={AuthCallback} />
       
       {/* Public routes - accessible without authentication */}
-      <Route path="/auth" component={SimpleAuthPage} />
+      <Route path="/auth" component={AuthPage} />
       <Route path="/signup" component={SignupPage} />
       
       {/* Redirect to auth if not authenticated */}

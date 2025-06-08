@@ -118,6 +118,12 @@ function Router() {
   
   // If not authenticated, only show public routes
   if (!user) {
+    // Redirect protected routes to home when not authenticated
+    const protectedPaths = ['/dashboard', '/people', '/estate', '/documents', '/evaluation'];
+    if (protectedPaths.some(path => location.startsWith(path))) {
+      return <Redirect to="/" />;
+    }
+    
     // Render public routes with more specific route definitions
     return (
       <>

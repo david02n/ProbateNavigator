@@ -305,8 +305,10 @@ export const getQueryFn: <T>(options: {
             console.log("PRODUCTION EMERGENCY: Authentication token missing, checking all possible sources");
             
             try {
-              // 1. Check current Firebase user directly
-              const currentUser = (window as any).firebase?.auth?.currentUser;
+              // 1. Check current Firebase user directly via npm package
+              const { getAuth } = await import('firebase/auth');
+              const auth = getAuth();
+              const currentUser = auth.currentUser;
               if (currentUser) {
                 try {
                   const emergencyToken = await currentUser.getIdToken(true);

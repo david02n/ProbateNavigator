@@ -149,10 +149,10 @@ function Router() {
       <>
         <Switch>
           <Route path="/auth">
-            <AuthPage />
+            <SimpleAuthPage />
           </Route>
           <Route path="/auth/:tab">
-            <AuthPage />
+            <SimpleAuthPage />
           </Route>
           <Route path="/signup">
             <SignupPage />

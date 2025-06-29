@@ -51,9 +51,8 @@ function Router() {
       <Switch>
         <Route path="/auth/callback" component={AuthCallback} />
         <Route path="/auth" component={AuthPage} />
-        <Route>
-          <Redirect to="/auth" />
-        </Route>
+        <Route path="/" component={AuthPage} />
+        <Route component={AuthPage} />
       </Switch>
     );
   }

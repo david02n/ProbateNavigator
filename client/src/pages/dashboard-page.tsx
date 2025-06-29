@@ -292,32 +292,32 @@ const DashboardPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-medium text-lg">
-                        {user?.firstName && user?.lastName
-                          ? `${user.firstName} ${user.lastName}`
+                        {(user as any)?.firstName && (user as any)?.lastName
+                          ? `${(user as any).firstName} ${(user as any).lastName}`
                           : "User Profile"}
                       </h3>
-                      <p className="text-charcoal/70">{user?.email}</p>
+                      <p className="text-charcoal/70">{(user as any)?.email}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-2 border-b border-muted">
                       <span className="text-charcoal/70">Email</span>
-                      <span className="font-medium">{user?.email}</span>
+                      <span className="font-medium">{(user as any)?.email}</span>
                     </div>
                     <div className="flex items-center justify-between py-2 border-b border-muted">
                       <span className="text-charcoal/70">Account Created</span>
                       <span className="font-medium">
-                        {user?.createdAt
-                          ? new Date(user.createdAt).toLocaleDateString()
+                        {(user as any)?.createdAt
+                          ? new Date((user as any).createdAt).toLocaleDateString()
                           : "N/A"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-2">
                       <span className="text-charcoal/70">Last Login</span>
                       <span className="font-medium">
-                        {user?.lastLogin
-                          ? new Date(user.lastLogin).toLocaleDateString()
+                        {(user as any)?.lastLogin
+                          ? new Date((user as any).lastLogin).toLocaleDateString()
                           : "N/A"}
                       </span>
                     </div>

@@ -6,8 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import { AuthPage } from "@/pages/auth-page";
-import { SignupPage } from "@/pages/signup-page";
+import AuthPage from "@/pages/AuthPage";
 
 import { AppFallback } from "@/components/AppFallback";
 
@@ -22,7 +21,7 @@ import DeceasedDetailsPage from "@/pages/deceased-details-page";
 import EvaluationPage from "@/pages/evaluation-page";
 
 import { useEffect } from "react";
-import AuthCallback from '@/pages/auth-callback';
+import AuthCallback from '@/pages/AuthCallback';
 
 // Enhanced router component that handles mobile navigation better
 function Router() {
@@ -49,11 +48,14 @@ function Router() {
   return (
     <Switch>
       {/* Authentication callback route */}
-      <Route path="/auth/callback" component={AuthCallback} />
+      <Route path="/auth/callback">
+        <AuthCallback />
+      </Route>
       
       {/* Public routes - accessible without authentication */}
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/signup" component={SignupPage} />
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
       
       {/* Redirect to auth if not authenticated */}
       {!user && <Redirect to="/auth" />}
@@ -61,20 +63,40 @@ function Router() {
       {/* Protected routes - require authentication */}
       {user && (
         <>
-          <Route path="/" component={Home} />
-          <Route path="/dashboard" component={DashboardPage} />
-          <Route path="/new-dashboard" component={NewDashboardPage} />
-          <Route path="/people" component={PeoplePage} />
-          <Route path="/estate" component={EstatePage} />
-          <Route path="/documents" component={DocumentsPage} />
-          <Route path="/documents/upload" component={DocumentUploadPage} />
-          <Route path="/deceased-details/:personId?" component={DeceasedDetailsPage} />
-          <Route path="/evaluation" component={EvaluationPage} />
+          <Route path="/">
+            <Home />
+          </Route>
+          <Route path="/dashboard">
+            <DashboardPage />
+          </Route>
+          <Route path="/new-dashboard">
+            <NewDashboardPage />
+          </Route>
+          <Route path="/people">
+            <PeoplePage />
+          </Route>
+          <Route path="/estate">
+            <EstatePage />
+          </Route>
+          <Route path="/documents">
+            <DocumentsPage />
+          </Route>
+          <Route path="/documents/upload">
+            <DocumentUploadPage />
+          </Route>
+          <Route path="/deceased-details/:personId?">
+            <DeceasedDetailsPage />
+          </Route>
+          <Route path="/evaluation">
+            <EvaluationPage />
+          </Route>
         </>
       )}
       
       {/* 404 route */}
-      <Route component={NotFound} />
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }

@@ -1,0 +1,85 @@
+Search...
+/
+Start
+Get support on Slack
+Visit our developer forum
+Contact us
+
+Consumer Authentication
+
+/
+
+API reference
+
+/
+
+OAuth
+
+/
+
+Start
+
+/
+
+Google
+
+Start Google OAuth flow
+GET
+https://test.stytch.com/v1/public/oauth/google/start
+A client-side endpoint (can only be queried from the user's browser) that starts the Google OAuth flow. This endpoint generates the Google OAuth URL with all of the required fields and redirects a user to that URL. From there, the user signs into their Google Account before getting redirected back to Stytch. After verifying the request, Stytch immediately redirects the user back to the login_redirect_url or signup_redirect_url URLs provided.
+
+Scopes
+By default our Google OAuth integration includes open_id, email, and profile scopes. You may add any additional Google API scopes (see here for a complete list) as a space separated list in the custom_scopes query parameter of /oauth/google/start.
+
+Additional provider parameters
+Any parameters that should be forwarded to the OAuth provider can be passed as query parameters with the provider_ prefix. For example, some OAuth providers support a login_hint parameter that allows you to pre-populate the OAuth login flow with a suggested email address. To specify the login_hint parameter in your OAuth request, you'd include provider_login_hint=exampleHint as a query parameter. We recommend consulting each OAuth provider's documentation for a list of supported parameters.
+
+Next steps
+Once the user successfully authenticates with Google, they'll be redirected to the redirect URL that you provided at the start of the OAuth flow with a Stytch OAuth token. Collect the token from the URL query parameters, and call Authenticate OAuth token to complete authentication.
+
+Query parameters
+public_token
+ 
+string
+login_redirect_url
+ 
+string
+signup_redirect_url
+ 
+string
+custom_scopes
+ 
+string
+provider_[parameter]
+ 
+string
+code_challenge
+ 
+string
+oauth_attach_token
+ 
+string
+Response fields
+status_code
+ 
+int
+request_id
+ 
+string
+redirect_url
+ 
+RedirectURL
+// Not applicable since this endpoint is only meant to be queried on the client's browser
+RESPONSE
+302
+
+{
+    "status_code": 302,
+    "request_id": "request-id-test-b05c992f-ebdc-489d-a754-c7e70ba13141",
+    "redirect_url": "https://accounts.google.com/o/oauth2/v2/auth/identifier?client_id=example-client-id&redirect_uri=https%3A%2F%2Fstytch.com%2Fv1%2Foauth%2Foauth-callback-test-d868b16b-3ecd-49ac-7fc6-e3d1051c5d65&response_type=code&scope=openid%20email%20profile&access_type=offline&state=example-state",
+}
+Common Error Types
+invalid_login_oauth_url
+no_match_for_provided_oauth_url
+pkce_required_for_native_callback
+OAuth Google Start - Stytch API

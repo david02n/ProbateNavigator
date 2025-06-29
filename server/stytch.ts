@@ -181,34 +181,22 @@ export function setupStytchAuth(app: Express) {
   // Google OAuth initiation endpoint
   app.get('/api/auth/google', async (req, res) => {
     try {
-      // Generate OAuth URL manually using Stytch OAuth configuration
       const redirectUrl = `${req.protocol}://${req.get('host')}/api/auth/callback`;
       console.log('Starting Google OAuth with redirect URL:', redirectUrl);
       
-      // Use correct Stytch API endpoint for OAuth
+      // Use correct Stytch OAuth URL according to documentation
       const apiUrl = process.env.NODE_ENV === 'production' ? 'https://api.stytch.com' : 'https://test.stytch.com';
-      const response = await fetch(`${apiUrl}/v1/oauth/google/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`${process.env.STYTCH_PROJECT_ID}:${process.env.STYTCH_SECRET}`).toString('base64')}`
-        },
-        body: JSON.stringify({
-          login_redirect_url: redirectUrl,
-          signup_redirect_url: redirectUrl
-        })
+      const params = new URLSearchParams({
+        public_token: process.env.STYTCH_PUBLIC_TOKEN || '',
+        login_redirect_url: redirectUrl,
+        signup_redirect_url: redirectUrl
       });
-
-      const result = await response.json();
-      console.log('Stytch OAuth API response:', result);
-
-      if (result.oauth_url) {
-        console.log('Redirecting to Google OAuth URL:', result.oauth_url);
-        res.redirect(result.oauth_url);
-      } else {
-        console.error('No OAuth URL in response:', result);
-        res.redirect('/auth?error=oauth_config_error');
-      }
+      
+      const oauthUrl = `${apiUrl}/v1/public/oauth/google/start?${params.toString()}`;
+      console.log('Redirecting to Stytch Google OAuth URL:', oauthUrl);
+      
+      // Direct redirect to Stytch OAuth endpoint
+      res.redirect(oauthUrl);
     } catch (error) {
       console.error('Google OAuth error:', error);
       res.redirect('/auth?error=oauth_error');

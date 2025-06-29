@@ -121,13 +121,16 @@ ProbateSwift is a web application designed to simplify the probate process in En
 
 ## Recent Changes
 
-- June 29, 2025: **Major Authentication Migration**
+- June 29, 2025: **Major Authentication Migration & Google OAuth Fix**
   - Completely migrated from Firebase to Stytch authentication
   - Fixed critical JavaScript errors preventing dashboard access
   - Added development bypass for immediate application access
   - Resolved Content Security Policy blocking Google scripts
   - Fixed WebSocket connection issues causing invalid URL construction
   - Added missing API endpoints (assessment, probate-cases, logout)
+  - **Successfully implemented Google OAuth using correct Stytch API endpoint**
+  - Google social login now properly redirects to Google account selection
+  - OAuth callback handler configured for authentication completion
   - Application now fully functional with consistent 200 OK authentication responses
 
 ## Changelog

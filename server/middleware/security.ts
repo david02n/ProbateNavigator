@@ -31,7 +31,9 @@ const helmetConfig = helmet({
         'https://*.replit.dev',
         'https://*.stytch.com',
         'https://*.googleapis.com',
-        'https://www.gstatic.com'
+        'https://www.gstatic.com',
+        'https://accounts.google.com',
+        'https://replit.com'
       ],
       styleSrc: [
         "'self'", 
@@ -42,7 +44,10 @@ const helmetConfig = helmet({
       connectSrc: [
         "'self'", 
         'https://*.probateswift.com', 
+        'https://*.replit.dev',
+        'wss://*.replit.dev',
         'https://*.googleapis.com',
+        'https://firebase.googleapis.com',
         'https://accounts.google.com'
       ],
       fontSrc: [

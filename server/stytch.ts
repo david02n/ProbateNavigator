@@ -180,9 +180,33 @@ export function setupStytchAuth(app: Express) {
 
   // Google OAuth initiation endpoint
   app.get('/api/auth/google', async (req, res) => {
-    // For now, redirect to magic link authentication since OAuth requires dashboard configuration
-    console.log('Google OAuth requested, redirecting to magic link authentication');
-    res.redirect('/auth?message=please_use_email');
+    try {
+      const redirectUrl = `${req.protocol}://${req.get('host')}/api/auth/callback`;
+      console.log('Starting Google OAuth with redirect URL:', redirectUrl);
+      
+      // Use the correct Stytch OAuth API - try different method structure
+      const result = await (stytchClient.oauth as any).google?.start({
+        login_redirect_url: redirectUrl,
+        signup_redirect_url: redirectUrl,
+      }) || await (stytchClient.oauth as any).start({
+        provider: 'google',
+        login_redirect_url: redirectUrl,
+        signup_redirect_url: redirectUrl,
+      });
+
+      console.log('Stytch OAuth result:', result.status_code, result);
+
+      if (result.status_code === 200 && result.oauth_url) {
+        console.log('Redirecting to Google OAuth URL:', result.oauth_url);
+        res.redirect(result.oauth_url);
+      } else {
+        console.error('OAuth start failed:', result);
+        res.redirect('/auth?error=oauth_start_failed');
+      }
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      res.redirect('/auth?error=oauth_error');
+    }
   });
 
   // Authentication callback endpoint (handles both magic links and OAuth)

@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupStytchAuth, verifyStytchSession } from "./stytch";
 import multer from "multer";
 import * as fs from "fs";
 import * as path from "path";
@@ -36,21 +36,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a HTTP server for the express app
   const httpServer = createServer(app);
   
-  // Setup Replit authentication
-  await setupAuth(app);
-  console.log('Replit authentication middleware registered');
-
-  // Auth routes for Replit Auth
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Setup Stytch authentication
+  setupStytchAuth(app);
+  console.log('Stytch authentication middleware registered');
 
   // Initialize WebSocket Server for real-time notifications
   const wss = new WebSocketServer({ 

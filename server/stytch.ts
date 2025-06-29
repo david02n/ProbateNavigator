@@ -181,27 +181,33 @@ export function setupStytchAuth(app: Express) {
   // Google OAuth initiation endpoint
   app.get('/api/auth/google', async (req, res) => {
     try {
+      // Generate OAuth URL manually using Stytch OAuth configuration
       const redirectUrl = `${req.protocol}://${req.get('host')}/api/auth/callback`;
       console.log('Starting Google OAuth with redirect URL:', redirectUrl);
       
-      // Use the correct Stytch OAuth API - try different method structure
-      const result = await (stytchClient.oauth as any).google?.start({
-        login_redirect_url: redirectUrl,
-        signup_redirect_url: redirectUrl,
-      }) || await (stytchClient.oauth as any).start({
-        provider: 'google',
-        login_redirect_url: redirectUrl,
-        signup_redirect_url: redirectUrl,
+      // Use correct Stytch API endpoint for OAuth
+      const apiUrl = process.env.NODE_ENV === 'production' ? 'https://api.stytch.com' : 'https://test.stytch.com';
+      const response = await fetch(`${apiUrl}/v1/oauth/google/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${Buffer.from(`${process.env.STYTCH_PROJECT_ID}:${process.env.STYTCH_SECRET}`).toString('base64')}`
+        },
+        body: JSON.stringify({
+          login_redirect_url: redirectUrl,
+          signup_redirect_url: redirectUrl
+        })
       });
 
-      console.log('Stytch OAuth result:', result.status_code, result);
+      const result = await response.json();
+      console.log('Stytch OAuth API response:', result);
 
-      if (result.status_code === 200 && result.oauth_url) {
+      if (result.oauth_url) {
         console.log('Redirecting to Google OAuth URL:', result.oauth_url);
         res.redirect(result.oauth_url);
       } else {
-        console.error('OAuth start failed:', result);
-        res.redirect('/auth?error=oauth_start_failed');
+        console.error('No OAuth URL in response:', result);
+        res.redirect('/auth?error=oauth_config_error');
       }
     } catch (error) {
       console.error('Google OAuth error:', error);

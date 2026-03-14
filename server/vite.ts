@@ -68,7 +68,11 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  // Universal __dirname replacement for ES modules
+  import { fileURLToPath } from 'url';
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const distPath = path.resolve(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -77,7 +81,7 @@ export function serveStatic(app: Express) {
   }
 
   // Serve static assets from public directory
-  app.use(express.static(path.join(__dirname, '../public')));
+  app.use(express.static(path.join(__dirname, '../public'))); // __dirname is now defined above
 
   // Handle client-side routing - serve index.html for all non-API routes
   app.use("*", (_req, res) => {

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import session from "express-session";
+import { clerkMiddleware } from "@clerk/express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { config } from "./config";
@@ -18,11 +19,12 @@ app.set("trust proxy", 1);
 app.use(securityMiddleware.helmet);
 app.use(securityMiddleware.securityHeaders);
 app.use(cors(securityMiddleware.corsOptions));
+app.use(clerkMiddleware());
 
 // Apply rate limiting to all routes
 app.use(securityMiddleware.limiter);
 
-// Session middleware (required for Stytch authentication)
+// Session middleware for server-side session compatibility
 app.use(session({
   store: createSessionStore(),
   name: "probateswift.sid",

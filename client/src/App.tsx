@@ -21,7 +21,6 @@ import DeceasedDetailsPage from "@/pages/deceased-details-page";
 import EvaluationPage from "@/pages/evaluation-page";
 
 import { useEffect } from "react";
-import AuthCallback from '@/pages/AuthCallback';
 
 // Enhanced router component that handles mobile navigation better
 function Router() {
@@ -49,7 +48,6 @@ function Router() {
   if (!user) {
     return (
       <Switch>
-        <Route path="/auth/callback" component={AuthCallback} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/" component={AuthPage} />
         <Route component={AuthPage} />
@@ -59,7 +57,6 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/auth/callback" component={AuthCallback} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={DashboardPage} />

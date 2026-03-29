@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupStytchAuth, verifyStytchSession } from "./stytch";
+import { requireClerkAuth, setupClerkAuth } from "./clerk";
 import multer from "multer";
 import * as fs from "fs";
 import * as path from "path";
@@ -33,9 +33,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a HTTP server for the express app
   const httpServer = createServer(app);
   
-  // Setup Stytch authentication
-  setupStytchAuth(app);
-  console.log('Stytch authentication middleware registered');
+  setupClerkAuth(app);
+  console.log('Clerk authentication middleware registered');
 
   // Initialize WebSocket Server for real-time notifications
   const wss = new WebSocketServer({ 
@@ -87,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Protected routes require authentication
-  const requireAuth = verifyStytchSession;
+  const requireAuth = requireClerkAuth;
 
   // Session refresh endpoint for maintaining active sessions
   app.post('/api/session-refresh', (req: Request, res: Response) => {
@@ -102,24 +101,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } else {
       res.status(401).json({ message: 'No active session' });
     }
-  });
-
-  // Test authenticated endpoint
-  app.get('/api/test-auth', requireAuth, (req: Request, res: Response) => {
-    const user = (req as any).user;
-    res.json({ message: 'Authentication successful', user });
-  });
-
-  // Logout endpoint
-  app.post('/api/auth/logout', (req: Request, res: Response) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Session destruction error:', err);
-        return res.status(500).json({ message: 'Logout failed' });
-      }
-      res.clearCookie('connect.sid');
-      res.json({ message: 'Logged out successfully' });
-    });
   });
 
   // Basic health check endpoint

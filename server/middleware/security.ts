@@ -29,7 +29,9 @@ const helmetConfig = helmet({
         "'unsafe-inline'", 
         "'unsafe-eval'", 
         'https://*.replit.dev',
-        'https://*.stytch.com',
+        'https://*.clerk.accounts.dev',
+        'https://*.clerk.dev',
+        'https://clerk.probateswift.com',
         'https://*.googleapis.com',
         'https://www.gstatic.com',
         'https://accounts.google.com',
@@ -46,6 +48,9 @@ const helmetConfig = helmet({
         'https://*.probateswift.com', 
         'https://*.replit.dev',
         'wss://*.replit.dev',
+        'https://*.clerk.accounts.dev',
+        'https://*.clerk.dev',
+        'https://clerk.probateswift.com',
         'https://*.googleapis.com',
         'https://firebase.googleapis.com',
         'https://accounts.google.com'
@@ -60,7 +65,9 @@ const helmetConfig = helmet({
       mediaSrc: ["'self'"],
       frameSrc: [
         "'self'",
-        
+        'https://*.clerk.accounts.dev',
+        'https://*.clerk.dev',
+        'https://clerk.probateswift.com',
         'https://accounts.google.com'
       ],
     },

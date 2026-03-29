@@ -12,6 +12,6 @@ export function createSessionStore() {
   return new PgStore({
     pool,
     tableName: "sessions",
-    createTableIfMissing: false,
+    createTableIfMissing: true,
   });
 }

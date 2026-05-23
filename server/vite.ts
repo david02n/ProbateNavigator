@@ -92,6 +92,18 @@ export function serveStatic(app: Express) {
     app.use(express.static(publicPath));
   }
 
+  app.use("/api", (_req, res) => {
+    res.status(404).json({ message: "Not found" });
+  });
+
+  app.use((req, res, next) => {
+    if (path.extname(req.path)) {
+      return res.status(404).end();
+    }
+
+    next();
+  });
+
   // Handle client-side routing - serve index.html for all non-API routes
   app.use("*", (_req, res) => {
     res.setHeader("Cache-Control", "no-store");

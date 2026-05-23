@@ -35,6 +35,17 @@ export const requireClerkAuth: RequestHandler = async (req, res, next) => {
 };
 
 export function setupClerkAuth(app: Express) {
+  app.get("/api/user", async (req: Request, res: Response) => {
+    const auth = getAuth(req);
+
+    if (!auth.userId) {
+      return res.json(null);
+    }
+
+    const user = await buildAppUser(auth.userId);
+    res.json(user);
+  });
+
   app.get("/api/auth/user", async (req: Request, res: Response) => {
     const auth = getAuth(req);
 

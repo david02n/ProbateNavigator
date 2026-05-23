@@ -13,8 +13,8 @@ This repository is set up to run on Railway with Railpack using the commands in 
 
 You have two valid options:
 
-1. Keep your existing Neon database and set `DATABASE_URL` manually.
-2. Add a Railway Postgres service and use the injected `DATABASE_URL`.
+1. Recommended: add a Railway Postgres service and use the injected `DATABASE_URL`.
+2. Or keep an external Postgres database and set `DATABASE_URL` manually.
 
 This app uses the Postgres `sessions` table for session storage when `DATABASE_URL` is present.
 

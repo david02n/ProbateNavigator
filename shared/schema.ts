@@ -33,7 +33,7 @@ export const users = pgTable("users", {
 // Assessment results model 
 export const assessmentResults = pgTable("assessment_results", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  userId: varchar("user_id").references(() => users.id),
   browserSessionId: text("browser_session_id"), // For anonymous assessments
   isProbateRequired: boolean("is_probate_required"),
   probateType: text("probate_type"), // "grant_of_probate", "letters_of_administration", etc.
@@ -48,7 +48,7 @@ export const assessmentResults = pgTable("assessment_results", {
 // Evaluation responses model - for detailed in-app evaluation flow
 export const evaluationResponses = pgTable("evaluation_responses", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
   caseId: integer("case_id").references(() => probateCases.id).notNull(),
   answers: jsonb("answers").$type<Record<string, any>>().notNull().default({}),
   derivedFlags: jsonb("derived_flags").$type<Record<string, any>>().notNull().default({}),
@@ -62,7 +62,7 @@ export const evaluationResponses = pgTable("evaluation_responses", {
 // Probate case model - this represents a single probate application
 export const probateCases = pgTable("probate_cases", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
   assessmentId: integer("assessment_id").references(() => assessmentResults.id),
   referenceNumber: text("reference_number").unique(), // Unique reference for the case
   status: text("status").notNull().default("draft"), // draft, submitted, approved, etc.
@@ -85,7 +85,7 @@ export const probateCases = pgTable("probate_cases", {
 export const executors = pgTable("people", {
   id: serial("id").primaryKey(),
   caseId: integer("case_id").references(() => probateCases.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(), // Who created this person
+  userId: varchar("user_id").references(() => users.id).notNull(), // Who created this person
   title: text("title"), // e.g. Mr, Mrs, Dr
   firstName: text("first_name").notNull(), // Maps to first_names
   middleNames: text("middle_names"), // Maps to middle_names
@@ -157,7 +157,7 @@ export const estateLiabilities = pgTable("estate_liabilities", {
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   caseId: integer("case_id").references(() => probateCases.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(), // Who uploaded the document
+  userId: varchar("user_id").references(() => users.id).notNull(), // Who uploaded the document
   type: text("type").notNull(), // will, death_certificate, iht_form, etc.
   filename: text("filename").notNull(),
   fileSize: integer("file_size"),

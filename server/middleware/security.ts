@@ -64,6 +64,10 @@ const helmetConfig = helmet({
         "'unsafe-inline'", 
         'https://fonts.googleapis.com'
       ],
+      workerSrc: [
+        "'self'",
+        'blob:'
+      ],
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: [
         "'self'", 
@@ -89,6 +93,7 @@ const helmetConfig = helmet({
         'https://*.clerk.accounts.dev',
         'https://*.clerk.dev',
         'https://clerk.probateswift.com',
+        'https://challenges.cloudflare.com',
         'https://accounts.google.com'
       ],
     },

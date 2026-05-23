@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/AuthPage";
+import ClerkCallbackPage from "@/pages/ClerkCallbackPage";
 import TermsPage from "@/pages/TermsPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import CookiesPage from "@/pages/CookiesPage";
@@ -48,6 +49,8 @@ function Router() {
   if (!user) {
     return (
       <Switch>
+        <Route path="/sso-callback" component={ClerkCallbackPage} />
+        <Route path="/auth/*" component={AuthPage} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
@@ -60,6 +63,7 @@ function Router() {
 
   return (
     <Switch>
+      <Route path="/sso-callback" component={ClerkCallbackPage} />
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/new-dashboard" component={NewDashboardPage} />
       <Route path="/people" component={PeoplePage} />
@@ -68,6 +72,9 @@ function Router() {
       <Route path="/documents/upload" component={DocumentUploadPage} />
       <Route path="/deceased-details/:personId?" component={DeceasedDetailsPage} />
       <Route path="/evaluation" component={EvaluationPage} />
+      <Route path="/auth/*">
+        <Redirect to="/dashboard" />
+      </Route>
       <Route path="/auth">
         <Redirect to="/dashboard" />
       </Route>
